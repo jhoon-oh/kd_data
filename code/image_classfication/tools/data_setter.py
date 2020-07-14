@@ -189,6 +189,11 @@ def train_transform(mean, std, data, mode):
                                     transforms.ToTensor(),
                                     Cutout(n_holes=1, length=16),
                                     transforms.Normalize((0.4914, 0.4822, 0.4465) , (0.2470, 0.243, 0.261))]
+    elif data == 'tiny-imagenet':
+        train_transform_list = [transforms.RandomCrop(64, padding=4),
+                                transforms.RandomHorizontalFlip(),
+                                transforms.ToTensor(),
+                                transforms.Normalize(mean=[0.4802, 0.4481, 0.3975], std=[0.2770, 0.2691, 0.2821])]
     elif data == 'imagenet':
         if mode == 'flip':
             train_transform_list = [transforms.RandomHorizontalFlip()] + train_transform_list
@@ -320,6 +325,70 @@ def cifar_100_setter(teacher,
                    'test' : test_loader,}
 
     dataset_sizes = {'train': len(cifar100_train_set), 'valid' : len(cifar100_valid_set), 'test' : len(cifar100_test_set)}
+    
+    return dataloaders, dataset_sizes
+
+def tiny_imagenet_setter(teacher,
+                    mode,
+                    batch_size,
+                    model_name,
+                    cls_acq,
+                    cls_order,
+                    delta,
+                    sample_acq,
+                    sample_order,
+                    zeta,
+                    root='/home/taehyeon/tiny-imagenet/',
+                    pin_memory=False,
+                    num_workers=4,
+                    download=True,
+                    fixed_valid=True):
+    if fixed_valid:
+        random.seed(2020)
+    train_dir = os.path.join(root, 'train')
+    test_dir = os.path.join(root, 'val')
+        
+    mean = [0.4802, 0.4481, 0.3975]
+    std = [0.2770, 0.2691, 0.2821]  
+    
+    train_transform_list = train_transform(mean, std, data='tiny-imagenet', mode=mode)
+
+    train_transforms = transforms.Compose(train_transform_list)
+    test_transforms = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=mean, std=std),
+    ])
+    
+    batch_size = batch_size
+    
+    
+    # Datasets
+    train_set = datasets.ImageFolder(train_dir, transform=train_transforms)
+    train_list, valid_list = set_train_valid(dataset='tiny-imagenet',
+                                             root=root,
+                                             teacher=teacher,
+                                             train_set=train_set,
+                                             model_name=model_name,
+                                             cls_acq=cls_acq,
+                                             cls_order=cls_order,
+                                             delta=delta,
+                                             sample_acq=sample_acq,
+                                             sample_order=sample_order,
+                                             zeta=zeta)
+    tiny_imagenet_train_set = Subset(train_set, train_list)
+    tiny_imagenet_valid_set = Subset(train_set, valid_list)
+    tiny_imagenet_test_set = datasets.ImageFolder(test_dir, transform=test_transforms)
+
+    pin_memory = True
+    train_loader = torch.utils.data.DataLoader(tiny_imagenet_train_set, batch_size=batch_size, shuffle=True, pin_memory=pin_memory, num_workers=num_workers)
+    valid_loader = torch.utils.data.DataLoader(tiny_imagenet_valid_set, batch_size=batch_size, pin_memory=pin_memory, num_workers=num_workers)
+    test_loader = torch.utils.data.DataLoader(tiny_imagenet_test_set, batch_size=batch_size, shuffle=False, pin_memory=pin_memory, num_workers=num_workers)
+
+    dataloaders = {'train' : train_loader,
+                   'valid' : valid_loader,
+                   'test' : test_loader,}
+
+    dataset_sizes = {'train': len(imagenet_train_set), 'valid' : len(imagenet_valid_set), 'test' : len(imagenet_test_set)}  
     
     return dataloaders, dataset_sizes
 

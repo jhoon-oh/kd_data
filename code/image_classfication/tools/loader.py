@@ -45,7 +45,7 @@ def load_model(teacher_str, student_str, dataset, device):
             student_widen_factor = int(student_str.split('-')[2])
             student = cifar.ResNet(depth=student_depth, widen_factor=student_widen_factor, num_classes=num_classes)
     
-    elif dataset == 'imagenet':
+    elif dataset == 'imagenet' or dataset=='tiny-imagenet':
         bn_aff = False if 'nobn' in teacher_str else True
         shortcut = False if 'demo' in teacher_str else True
 
@@ -109,6 +109,18 @@ def load_dataloader(dataset,
                                           delta=delta)
     elif dataset == 'imagenet':
         dataloaders, _ = imagenet_setter(teacher=teacher,
+                                         mode=mode,
+                                         batch_size=batch_size,
+                                         root=root,
+                                         model_name=model_name,
+                                         cls_acq=cls_acq,
+                                         cls_order=cls_order,
+                                         zeta=zeta,
+                                         sample_acq=sample_acq,
+                                         sample_order=sample_order,
+                                         delta=delta)
+    elif dataset == 'tiny-imagenet':
+        dataloaders, _ = tiny_imagenet_setter(teacher=teacher,
                                          mode=mode,
                                          batch_size=batch_size,
                                          root=root,
