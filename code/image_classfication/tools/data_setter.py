@@ -14,7 +14,7 @@ from tqdm import tqdm
 from transforms.autoaugment import CIFAR10Policy, ImageNetPolicy
 from transforms.cutout import *
 
-__all__ = ['cifar_10_setter', 'cifar_100_setter', 'imagenet_setter']
+__all__ = ['cifar_10_setter', 'cifar_100_setter', 'tiny_imagenet_setter', 'imagenet_setter']
 
 def set_train_valid(dataset, root, teacher, train_set, model_name, cls_acq, cls_order, delta, sample_acq, sample_order, zeta):
     # cls_acq = 'random' or 'entropy'
@@ -259,11 +259,13 @@ def cifar_10_setter(teacher,
     valid_loader = torch.utils.data.DataLoader(cifar10_valid_set, batch_size=batch_size, pin_memory=pin_memory, num_workers=num_workers)
     test_loader = torch.utils.data.DataLoader(cifar10_test_set, batch_size=batch_size, pin_memory=pin_memory, num_workers=num_workers)
 
-    dataloaders = {'train' : train_loader,
-                   'valid' : valid_loader,
-                   'test' : test_loader,}
+    dataloaders = {'train': train_loader,
+                   'valid': valid_loader,
+                   'test': test_loader,}
 
-    dataset_sizes = {'train': len(cifar10_train_set), 'valid' : len(cifar10_valid_set), 'test' : len(cifar10_test_set)}
+    dataset_sizes = {'train': len(cifar10_train_set),
+                     'valid': len(cifar10_valid_set),
+                     'test': len(cifar10_test_set)}
     
     return dataloaders, dataset_sizes
 
@@ -320,11 +322,13 @@ def cifar_100_setter(teacher,
     valid_loader = torch.utils.data.DataLoader(cifar100_valid_set, batch_size=batch_size, pin_memory=pin_memory, num_workers=num_workers)
     test_loader = torch.utils.data.DataLoader(cifar100_test_set, batch_size=batch_size, pin_memory=pin_memory, num_workers=num_workers)
 
-    dataloaders = {'train' : train_loader,
-                   'valid' : valid_loader,
-                   'test' : test_loader,}
+    dataloaders = {'train': train_loader,
+                   'valid': valid_loader,
+                   'test': test_loader,}
 
-    dataset_sizes = {'train': len(cifar100_train_set), 'valid' : len(cifar100_valid_set), 'test' : len(cifar100_test_set)}
+    dataset_sizes = {'train': len(cifar100_train_set),
+                     'valid': len(cifar100_valid_set),
+                     'test': len(cifar100_test_set)}
     
     return dataloaders, dataset_sizes
 
@@ -388,7 +392,9 @@ def tiny_imagenet_setter(teacher,
                    'valid' : valid_loader,
                    'test' : test_loader,}
 
-    dataset_sizes = {'train': len(imagenet_train_set), 'valid' : len(imagenet_valid_set), 'test' : len(imagenet_test_set)}  
+    dataset_sizes = {'train': len(tiny_imagenet_train_set),
+                     'valid': len(tiny_imagenet_valid_set),
+                     'test': len(tiny_imagenet_test_set)}  
     
     return dataloaders, dataset_sizes
 
@@ -450,10 +456,12 @@ def imagenet_setter(teacher,
     valid_loader = torch.utils.data.DataLoader(imagenet_valid_set, batch_size=batch_size, pin_memory=pin_memory, num_workers=num_workers)
     test_loader = torch.utils.data.DataLoader(imagenet_test_set, batch_size=batch_size, shuffle=False, pin_memory=pin_memory, num_workers=num_workers)
 
-    dataloaders = {'train' : train_loader,
-                   'valid' : valid_loader,
-                   'test' : test_loader,}
+    dataloaders = {'train': train_loader,
+                   'valid': valid_loader,
+                   'test': test_loader,}
 
-    dataset_sizes = {'train': len(imagenet_train_set), 'valid' : len(imagenet_valid_set), 'test' : len(imagenet_test_set)}  
+    dataset_sizes = {'train': len(imagenet_train_set),
+                     'valid': len(imagenet_valid_set),
+                     'test': len(imagenet_test_set)}  
     
     return dataloaders, dataset_sizes

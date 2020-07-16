@@ -12,6 +12,8 @@ def load_model(teacher_str, student_str, dataset, device):
         num_classes = 10
     elif dataset == 'cifar100':
         num_classes = 100
+    elif dataset == 'tiny-imagenet':
+        num_classes = 200
     elif dataset == 'imagenet':
         num_classes = 1000
     
@@ -45,7 +47,7 @@ def load_model(teacher_str, student_str, dataset, device):
             student_widen_factor = int(student_str.split('-')[2])
             student = cifar.ResNet(depth=student_depth, widen_factor=student_widen_factor, num_classes=num_classes)
     
-    elif dataset == 'imagenet' or dataset=='tiny-imagenet':
+    elif dataset == 'imagenet':
         bn_aff = False if 'nobn' in teacher_str else True
         shortcut = False if 'demo' in teacher_str else True
 
@@ -67,6 +69,29 @@ def load_model(teacher_str, student_str, dataset, device):
             elif student_depth == 50:
                 student = imagenet.resnet50()
                 
+    elif dataset == 'tiny-imagenet':
+        # teacher part will be modified
+        if teacher_str is not None:
+            if 'res' in teacher_str:
+                teacher_depth = int(teacher_str.split('-')[1])
+                if teacher_depth == 152:
+                    teacher = imagenet.resnet152(pretrained=True)
+                elif teacher_depth == 50:
+                    teacher = imagenet.resnet50(pretrained=True)
+                elif teacher_depth == 34:
+                    teacher = imagenet.resnet34(pretrained=True)
+        else:
+            teacher = None
+        
+        if 'res' in student_str:
+            student_depth = int(student_str.split('-')[1])
+            if student_depth == 152:
+                student = imagenet.resnet152(num_classes=num_classes)
+            elif student_depth == 50:
+                student = imagenet.resnet50(num_classes=num_classes)
+            elif student_depth == 34:
+                student = imagenet.resnet34(num_classes=num_classes)
+        
     return teacher, student
 
 def load_dataloader(dataset,
