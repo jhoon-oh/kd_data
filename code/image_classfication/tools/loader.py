@@ -75,11 +75,15 @@ def load_model(teacher_str, student_str, dataset, device):
             if 'res' in teacher_str:
                 teacher_depth = int(teacher_str.split('-')[1])
                 if teacher_depth == 152:
-                    teacher = imagenet.resnet152(pretrained=True)
+                    teacher = imagenet.resnet152(num_classes=num_classes)
                 elif teacher_depth == 50:
-                    teacher = imagenet.resnet50(pretrained=True)
+                    teacher = imagenet.resnet50(num_classes=num_classes)
                 elif teacher_depth == 34:
-                    teacher = imagenet.resnet34(pretrained=True)
+                    teacher = imagenet.resnet34(num_classes=num_classes)
+                    
+            filename = './model_checkpoints/{}/None/{}/alp_0.1_T_1.0/random_highest_1.0_random_highest_1.0_seed1.t1'.format(dataset, teacher_str)
+            checkpoint = torch.load(filename, map_location=device)['199']
+            teacher.load_state_dict(checkpoint, strict=True)
         else:
             teacher = None
         

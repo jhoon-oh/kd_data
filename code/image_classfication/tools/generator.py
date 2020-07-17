@@ -41,6 +41,24 @@ def generate_sample_info(teacher, dataset, root, model_name, device):
             train_set = datasets.CIFAR100(root, train=True, transform=transform_list, download=True)
         train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=False)
     
+    elif dataset == 'tiny-imagenet':
+        train_dir = os.path.join(root, 'train')
+        
+        mean = [0.4802, 0.4481, 0.3975]
+        std = [0.2770, 0.2691, 0.2821]
+        
+        transform_list = transforms.Compose([transforms.RandomCrop(64, padding=4),
+                                             transforms.RandomHorizontalFlip(),
+                                             transforms.ToTensor(),
+                                             transforms.Normalize(mean=mean, std=std)])
+        
+        batch_size = 128
+                
+        # Datasets
+        train_set = datasets.ImageFolder(train_dir, transform=transform_list)
+        train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=False, pin_memory=True)
+    
+    
     elif dataset == 'imagenet':
         train_dir = os.path.join(root, 'train')
         
@@ -83,7 +101,7 @@ def generate_sample_info(teacher, dataset, root, model_name, device):
         with open(sample_info_path, "w") as json_file:
             json.dump(sample_info, json_file)
                 
-    elif dataset == 'imagenet':
+    elif dataset == 'tiny-imagenet' or dataset == 'imagenet':
         for idx, (image, label) in enumerate(train_loader):
             labels = []
             entropies = []
