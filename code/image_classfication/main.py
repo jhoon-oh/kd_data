@@ -2,6 +2,8 @@
 import argparse
 import torch
 import os
+import numpy as  np
+import random
 
 from tools.loader import load_model, load_dataloader
 from tools.generator import generate_sample_info
@@ -135,6 +137,7 @@ if __name__ == '__main__':
     parser.add_argument('--alpha', default=0.1, type=float, help='alpha of kd loss')
     parser.add_argument('--temperature', default=1.0, type=float, help='temperature of kd loss')
     parser.add_argument('--logit', default='none', type=str, choices=['none', 'l2_logit'],  help='logit_loss')
+    parser.add_argument('--save_all', default=False, type=lambda x: (str(x).lower() == 'true'))
         
     args = parser.parse_args()
     main(args)

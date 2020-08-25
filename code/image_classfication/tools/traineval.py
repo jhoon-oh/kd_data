@@ -84,7 +84,15 @@ def train_model(model_name, device, dataloaders, teacher, student, optimizer, nu
             for k, v in current_state.items():
                 current_state[k] = v.cpu()
             state[str(epoch)] = copy.deepcopy(current_state)
-            
+        
+        if args.save_all :
+            current_state = copy.deepcopy(student.state_dict())
+            for k, v in current_state.items():
+                current_state[k] = v.cpu()
+            state[str(epoch)] = copy.deepcopy(current_state)
+            torch.save(state, './model_checkpoints/'+model_name+'.t1')
+
+        
     torch.save(state, './model_checkpoints/'+model_name+'.t1')
     print ('./model_checkpoints/'+model_name+'.t1')
     
@@ -115,7 +123,8 @@ def eval_model(teacher, student, loader, criterion, alpha, temperature, device):
             
         image = image.cpu()
         label = label.cpu()
-        torch.cuda.empty_cache()
+        with torch.cuda.device(device):
+            torch.cuda.empty_cache()
 
     pred_labels = np.argmax(pred_labels, axis=1)
     return np.mean(losses), np.sum(pred_labels==labels)/float(labels.size)

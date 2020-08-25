@@ -32,9 +32,9 @@ def load_model(teacher_str, student_str, dataset, device):
                 teacher = cifar.ResNet(depth=teacher_depth, width=teacher_widen_factor, num_classes=num_classes, bn_aff = bn_aff, shortcut = shortcut)
                 
             filename = './model_checkpoints/{}/None/{}/alp_0.1_T_1.0/random_highest_1.0_random_highest_1.0_seed9999.t1'.format(dataset, teacher_str)
-            checkpoint = torch.load(filename, map_location=device)['199']
-            
-            teacher.load_state_dict(checkpoint, strict=True)
+            teacher.cpu()
+            teacher.load_state_dict(torch.load(filename, map_location='cpu')['199'])
+            teacher = teacher.to(device)
         else:
             teacher = None
         
@@ -82,8 +82,9 @@ def load_model(teacher_str, student_str, dataset, device):
                     teacher = imagenet.resnet34(num_classes=num_classes)
                     
             filename = './model_checkpoints/{}/None/{}/alp_0.1_T_1.0/random_highest_1.0_random_highest_1.0_seed1.t1'.format(dataset, teacher_str)
-            checkpoint = torch.load(filename, map_location=device)['199']
-            teacher.load_state_dict(checkpoint, strict=True)
+            teacher.cpu()
+            teacher.load_state_dict(torch.load(filename, map_location='cpu')['199'])
+            teacher = teacher.to(device)
         else:
             teacher = None
         
