@@ -2,6 +2,8 @@
 import argparse
 import torch
 import os
+import numpy as  np
+import random
 
 from tools.loader import load_model, load_dataloader
 from tools.generator import generate_sample_info
@@ -20,13 +22,14 @@ def main(args):
     model_name = '{}'.format(args.dataset) + \
                  '/{}/{}'.format(str(args.teacher), str(args.student)) + \
                  '/alp_{}_T_{}'.format(str(args.alpha), str(args.temperature)) + \
-                 '/{}_{}_{}_{}_{}_{}_seed{}'.format(args.cls_acq,
+                 '/{}_{}_{}_{}_{}_{}_seed{}_{}'.format(args.cls_acq,
                                                     args.cls_order,
                                                     str(args.delta),
                                                     args.sample_acq,
                                                     args.sample_order,
                                                     str(args.zeta),
-                                                    str(args.seed))
+                                                    str(args.seed),
+                                                    str(args.logit))
     
     result_path = './results'
     checkpoint_path = './model_checkpoints'
@@ -134,7 +137,8 @@ if __name__ == '__main__':
     
     parser.add_argument('--alpha', default=0.1, type=float, help='alpha of kd loss')
     parser.add_argument('--temperature', default=1.0, type=float, help='temperature of kd loss')
-    parser.add_argument('--logit', default='none', type=str, choices=['none', 'l2_logit'],  help='logit_loss')
+    parser.add_argument('--save_all', help='save weights?', action='store_true')
+    parser.add_argument('--logit', default='none', type=str, choices=['none', 'l2_logit', 'smooth_logit'],  help='logit_loss')
         
     args = parser.parse_args()
     main(args)

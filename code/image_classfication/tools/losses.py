@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-__all__ = ['cr_loss', 'kd_loss', 'diri_loss', 'inf_grad', 'ze_grad']
+__all__ = ['cr_loss', 'mse_logit', 'smooth_logit', 'kd_loss', 'diri_loss', 'inf_grad', 'ze_grad']
 
 def cr_loss(output, label):
     """
@@ -19,6 +19,14 @@ def cr_loss(output, label):
           demonstrates how you can easily define a custom loss function.
     """
     return nn.CrossEntropyLoss()(output, label)
+
+def mse_logit(output, teacher_output):
+    
+    return nn.MSELoss()(output, teacher_output)
+
+def smooth_logit(output, teacher_output):
+    
+    return nn.SmoothL1Loss()(output, teacher_output)
 
 
 def kd_loss(output, label, teacher_output, alpha, temperature):

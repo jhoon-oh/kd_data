@@ -50,7 +50,11 @@ def train_model(model_name, device, dataloaders, teacher, student, optimizer, nu
             optimizer.zero_grad()
             
             if teacher is not None:
-                if args.temperature > 100:
+                if args.logit == 'l2_logit':
+                    loss = mse_logit(pred_label, teacher_label)
+                elif args.logit == 'smooth_logit':
+                    loss = smooth_logit(pred_label, teacher_label)
+                elif args.temperature > 100:
                     inf_gradient = inf_grad(pred_label, teacher_label, pred_label.shape[1], device)
                     pred_label.backward(args.alpha * inf_gradient, retain_graph=True)
                     loss = nn.CrossEntropyLoss()(pred_label, label) * (1 - args.alpha)
@@ -84,7 +88,15 @@ def train_model(model_name, device, dataloaders, teacher, student, optimizer, nu
             for k, v in current_state.items():
                 current_state[k] = v.cpu()
             state[str(epoch)] = copy.deepcopy(current_state)
-            
+        
+        if args.save_all :
+            current_state = copy.deepcopy(student.state_dict())
+            for k, v in current_state.items():
+                current_state[k] = v.cpu()
+            state[str(epoch)] = copy.deepcopy(current_state)
+            torch.save(state, './model_checkpoints/'+model_name+'.t1')
+
+        
     torch.save(state, './model_checkpoints/'+model_name+'.t1')
     print ('./model_checkpoints/'+model_name+'.t1')
     
@@ -115,7 +127,8 @@ def eval_model(teacher, student, loader, criterion, alpha, temperature, device):
             
         image = image.cpu()
         label = label.cpu()
-        torch.cuda.empty_cache()
+        with torch.cuda.device(device):
+            torch.cuda.empty_cache()
 
     pred_labels = np.argmax(pred_labels, axis=1)
     return np.mean(losses), np.sum(pred_labels==labels)/float(labels.size)
