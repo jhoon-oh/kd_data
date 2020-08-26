@@ -137,13 +137,8 @@ if __name__ == '__main__':
     
     parser.add_argument('--alpha', default=0.1, type=float, help='alpha of kd loss')
     parser.add_argument('--temperature', default=1.0, type=float, help='temperature of kd loss')
-<<<<<<< HEAD
     parser.add_argument('--save_all', help='save weights?', action='store_true')
     parser.add_argument('--logit', default='none', type=str, choices=['none', 'l2_logit', 'smooth_logit'],  help='logit_loss')
-=======
-    parser.add_argument('--logit', default='none', type=str, choices=['none', 'l2_logit'],  help='logit_loss')
-    parser.add_argument('--save_all', default=False, type=lambda x: (str(x).lower() == 'true'))
->>>>>>> 8a4bd3b6d445d93fd2c8064e716e5a87cef85c53
         
     args = parser.parse_args()
     main(args)
