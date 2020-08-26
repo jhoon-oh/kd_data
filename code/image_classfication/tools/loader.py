@@ -35,7 +35,10 @@ def load_model(teacher_str, student_str, dataset, device):
             teacher.cpu()
             teacher.load_state_dict(torch.load(filename, map_location='cpu')['199'])
             teacher = teacher.to(device)
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8a4bd3b6d445d93fd2c8064e716e5a87cef85c53
         else:
             teacher = None
         
