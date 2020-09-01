@@ -115,13 +115,13 @@ def histogram_tld(teacher_df, student_df):
     
     fig.show()
 
-def quantile_tld(teacher_df, student_df):
+def quantile_tld(teacher_df, student_df, data_type="train"):
 
     teacher_df_plot = teacher_df.copy()
     student_df_plot = student_df.copy()
     teacher_df_plot, student_df_plot = make_quantile_column(teacher_df_plot, student_df_plot)
     student_df_plot.sort_values("teacher_class", inplace=True)
-    fig = px.histogram(student_df_plot, x="tld", color="teacher_class",  histnorm='percent' , title="Student TLD wrt teacher quantile")
+    fig = px.histogram(student_df_plot[student_df_plot.data_type==data_type], x="tld", color="teacher_class",  histnorm='percent' , title="Student {} TLD wrt teacher quantile".format(data_type))
     fig.update_xaxes(range=[-15, 25])
     fig.show()
     
@@ -158,28 +158,43 @@ def quantile_acc(teacher_df, student_df, sub=False):
 def make_quantile_column(teacher_df,student_df, sub=False):
     teacher_df_plot = teacher_df.copy()
     student_df_plot = student_df.copy()
+
     teacher_df_plot["sub"] = teacher_df_plot.tld - student_df_plot.tld
-    
+
     qs =[0, 0.25, 0.5, 0.75]
     thresholds = []
-    if sub:
-        for q in qs:
-            thresholds.append(teacher_df_plot["sub"].quantile(q))
-    else :
-        for q in qs:
-            thresholds.append(teacher_df_plot.tld.quantile(q))
-    def make_quantile_class(x):
-        for idx, t in enumerate(thresholds):
-            if idx == 0:
-                prev_t = t
-                continue
 
-            if x < t and x >= prev_t:
-                return idx-1   
-        return 3
-    student_df_plot["teacher_class"] = teacher_df_plot.tld.apply(lambda x : make_quantile_class(x))
-    teacher_df_plot["teacher_class"] = teacher_df_plot.tld.apply(lambda x : make_quantile_class(x))
-    
+    teacher_class = pd.Series(dtype=int)
+    for data_type in ["train", "test"]:
+        teacher_df_plot_by_datatype = teacher_df_plot[teacher_df_plot.data_type==data_type]
+        student_df_plot_by_datatype = student_df_plot[student_df_plot.data_type==data_type]
+
+
+        if sub:
+            for q in qs:
+                thresholds.append(teacher_df_plot_by_datatype["sub"].quantile(q))
+        else :
+            for q in qs:
+                thresholds.append(teacher_df_plot_by_datatype.tld.quantile(q))
+        def make_quantile_class(x):
+            for idx, t in enumerate(thresholds):
+                if idx == 0:
+                    prev_t = t
+                    continue
+
+                if x < t and x >= prev_t:
+                    return idx-1   
+            return 3
+
+
+        if sub:
+            teacher_class = teacher_class.append(teacher_df_plot_by_datatype['sub'].apply(lambda x : make_quantile_class(x)))
+
+        else :
+            teacher_class = teacher_class.append(teacher_df_plot_by_datatype.tld.apply(lambda x : make_quantile_class(x)))
+        
+    student_df_plot["teacher_class"] = teacher_class
+    teacher_df_plot["teacher_class"] = teacher_class
     return teacher_df_plot, student_df_plot
 
 def get_dataframe(teacher, student, teacher_checkpoint, student_checkpoint, nets=False, epoch="199",seed=0 ,device="cuda:1"):
@@ -363,6 +378,9 @@ def get_dataframe(teacher, student, teacher_checkpoint, student_checkpoint, nets
             tld_list.append(x["top1_top2"])
     student_df["tld"] = tld_list
     student_df.head()
+    
+    teacher_df.reset_index(drop=True, inplace=True)
+    student_df.reset_index(drop=True, inplace=True)
     
     return teacher_df, student_df
 
