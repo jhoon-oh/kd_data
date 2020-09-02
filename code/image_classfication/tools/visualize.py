@@ -162,10 +162,10 @@ def make_quantile_column(teacher_df,student_df, sub=False):
     teacher_df_plot["sub"] = teacher_df_plot.tld - student_df_plot.tld
 
     qs =[0, 0.25, 0.5, 0.75]
-    thresholds = []
 
     teacher_class = pd.Series(dtype=int)
     for data_type in ["train", "test"]:
+        thresholds = []
         teacher_df_plot_by_datatype = teacher_df_plot[teacher_df_plot.data_type==data_type]
         student_df_plot_by_datatype = student_df_plot[student_df_plot.data_type==data_type]
 
@@ -176,16 +176,12 @@ def make_quantile_column(teacher_df,student_df, sub=False):
         else :
             for q in qs:
                 thresholds.append(teacher_df_plot_by_datatype.tld.quantile(q))
+        
+        thresholds[0] = -9999
         def make_quantile_class(x):
-            for idx, t in enumerate(thresholds):
-                if idx == 0:
-                    prev_t = t
-                    continue
-
-                if x < t and x >= prev_t:
-                    return idx-1   
-            return 3
-
+            tmp = x > np.array(thresholds)
+            clas = len(np.where(tmp)[0])
+            return clas-1
 
         if sub:
             teacher_class = teacher_class.append(teacher_df_plot_by_datatype['sub'].apply(lambda x : make_quantile_class(x)))
