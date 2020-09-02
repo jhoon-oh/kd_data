@@ -16,12 +16,12 @@ from transforms.cutout import *
 
 __all__ = ['cifar_10_setter', 'cifar_100_setter', 'tiny_imagenet_setter', 'imagenet_setter']
 
-def set_train_valid(dataset, root, teacher, train_set, model_name,
+def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
                     cls_acq, cls_order, delta, sample_acq, sample_order, zeta):
     # cls_acq = 'random' or 'entropy' or 'tld'
     # cls_order = 'highest' or 'lowest' (when the acquisition fucntion for classes is entropy)
     # delta = the ratio of train classes
-    # sample_acq = 'random' or 'entropy'
+    # sample_acq = 'random' or 'entropy' or 'tld'
     # sample_order = 'highest' or 'lowest' (when the acquisition fucntion for samples is entropy)
     # zeta = the ratio of train samples per train class
     # e.g., delta=1.0, zeta=1.0 -> train classes # = 100 & train samples # per train class = 500
@@ -102,77 +102,120 @@ def set_train_valid(dataset, root, teacher, train_set, model_name,
         entropy_lst = np.array(entropy_lst)
         tld_lst = np.array(tld_lst)
 
-        dic = {}
-        for cls_id in sorted(np.unique(label_lst)):
-            dic[str(cls_id)] = np.where(label_lst==cls_id)[0]
-
-        train_dict = {}
-        valid_dict = {}
-
-        total_cls_number = len(dic.keys())
-        valid_cls_number = int(total_cls_number * (1-delta))
-
-        if cls_acq == 'random':
-            valid_cls_id = sorted(random.sample(dic.keys(), valid_cls_number))
-            train_cls_id = sorted(list(set(dic.keys())-set(valid_cls_id)))
-
-        elif cls_acq == 'entropy' or cls_acq == 'tld':
-            cls_info_lst = []
-            if cls_acq == 'entropy':
-                for _, v in dic.items():
-                    cls_info_lst.append(np.mean(entropy_lst[v]))
-            elif cls_acq == 'tld':
-                for _, v in dic.items():
-                    cls_info_lst.append(np.mean(tld_lst[v]))
-            cls_info_lst = np.array(cls_info_lst)
-
-            if cls_order == 'highest':
-                valid_cls_id = list((-cls_info_lst).argsort()[:valid_cls_number])
-            elif cls_order == 'lowest':
-                valid_cls_id = list((cls_info_lst).argsort()[:valid_cls_number])
-            valid_cls_id = [str(_) for _ in valid_cls_id]
-            train_cls_id = sorted(list(set(dic.keys())-set(valid_cls_id)))
-            
-        for cls_id in valid_cls_id:
-            train_dict[cls_id] = []
-            valid_dict[cls_id] = [int(_) for _ in dic[cls_id]]
-
-        for cls_id in train_cls_id:
-            sample_lst = dic[cls_id]
-
-            total_cls_sample_number = len(sample_lst)
-            valid_cls_sample_number = int(total_cls_sample_number * (1-zeta))
+        # without considering per class
+        if not per_class:
+            total_sample_list = list(range(len(label_lst)))
+            total_sample_number = len(total_sample_list)
+            valid_sample_number = int(total_sample_number * (1-zeta))
 
             if sample_acq == 'random':
-                valid_dict[cls_id] = [int(_) for _ in sorted(random.sample(list(sample_lst), valid_cls_sample_number))]
-                train_dict[cls_id] = [int(_) for _ in sorted(list(set(sample_lst)-set(valid_dict[cls_id])))]
+                valid_list = [int(_) for _ in sorted(random.sample(total_sample_list, valid_sample_number))]
+                train_list = [int(_) for _ in sorted(list(set(total_sample_list)-set(valid_list)))]
 
             elif sample_acq == 'entropy' or sample_acq == 'tld':
                 if sample_acq == 'entropy':
-                    sample_info_lst = entropy_lst[sample_lst]
+                    sample_info_lst = entropy_lst
                 elif sample_acq == 'tld':
-                    sample_info_lst = tld_lst[sample_lst]
+                    sample_info_lst = tld_lst
 
                 if sample_order == 'highest':
-                    valid_sample_id = list((-sample_info_lst).argsort()[:valid_cls_sample_number])
+                    valid_list = [int(_) for _ in list((-sample_info_lst).argsort()[:valid_sample_number])]
                 elif sample_order == 'lowest':
-                    valid_sample_id = list((sample_info_lst).argsort()[:valid_cls_sample_number])
-                valid_dict[cls_id] = [int(_) for _ in sorted(list(np.array(sample_lst)[valid_sample_id]))]
-                train_dict[cls_id] = [int(_) for _ in sorted(list(set(sample_lst)-set(valid_dict[cls_id])))]
-                
-        train_json_path = './results/' + model_name +'_train.json'
-        valid_json_path = './results/' + model_name +'_valid.json'
-        with open(train_json_path, "w") as json_file:
-            json.dump(train_dict, json_file)
-        with open(valid_json_path, "w") as json_file:
-            json.dump(valid_dict, json_file)
+                    valid_list = [int(_) for _ in list((sample_info_lst).argsort()[:valid_sample_number])]
+                train_list = [int(_) for _ in sorted(list(set(total_sample_list)-set(valid_list)))]              
 
-        train_list = []
-        valid_list = []
-        for _, v in train_dict.items():
-            train_list += v
-        for _, v in valid_dict.items():
-            valid_list += v
+            train_dict = {}
+            valid_dict = {}
+
+            for l in np.unique(label_lst):
+                train_dict[str(l)] = []
+                valid_dict[str(l)] = []
+            
+            for l in train_list:
+                train_dict[str(label_lst[l])].append(l)                
+            for l in valid_list:
+                valid_dict[str(label_lst[l])].append(l)
+
+            train_json_path = './results/' + model_name +'_train.json'
+            valid_json_path = './results/' + model_name +'_valid.json'
+            with open(train_json_path, "w") as json_file:
+                json.dump(train_dict, json_file)
+            with open(valid_json_path, "w") as json_file:
+                json.dump(valid_dict, json_file)
+        
+        # with considering per class
+        else:
+            dic = {}
+            for cls_id in sorted(np.unique(label_lst)):
+                dic[str(cls_id)] = np.where(label_lst==cls_id)[0]
+
+            train_dict = {}
+            valid_dict = {}
+
+            total_cls_number = len(dic.keys())
+            valid_cls_number = int(total_cls_number * (1-delta))
+
+            if cls_acq == 'random':
+                valid_cls_id = sorted(random.sample(dic.keys(), valid_cls_number))
+                train_cls_id = sorted(list(set(dic.keys())-set(valid_cls_id)))
+
+            elif cls_acq == 'entropy' or cls_acq == 'tld':
+                cls_info_lst = []
+                if cls_acq == 'entropy':
+                    for _, v in dic.items():
+                        cls_info_lst.append(np.mean(entropy_lst[v]))
+                elif cls_acq == 'tld':
+                    for _, v in dic.items():
+                        cls_info_lst.append(np.mean(tld_lst[v]))
+                cls_info_lst = np.array(cls_info_lst)
+
+                if cls_order == 'highest':
+                    valid_cls_id = list((-cls_info_lst).argsort()[:valid_cls_number])
+                elif cls_order == 'lowest':
+                    valid_cls_id = list((cls_info_lst).argsort()[:valid_cls_number])
+                valid_cls_id = [str(_) for _ in valid_cls_id]
+                train_cls_id = sorted(list(set(dic.keys())-set(valid_cls_id)))
+
+            for cls_id in valid_cls_id:
+                train_dict[cls_id] = []
+                valid_dict[cls_id] = [int(_) for _ in dic[cls_id]]
+
+            for cls_id in train_cls_id:
+                sample_lst = dic[cls_id]
+
+                total_cls_sample_number = len(sample_lst)
+                valid_cls_sample_number = int(total_cls_sample_number * (1-zeta))
+
+                if sample_acq == 'random':
+                    valid_dict[cls_id] = [int(_) for _ in sorted(random.sample(list(sample_lst), valid_cls_sample_number))]
+                    train_dict[cls_id] = [int(_) for _ in sorted(list(set(sample_lst)-set(valid_dict[cls_id])))]
+
+                elif sample_acq == 'entropy' or sample_acq == 'tld':
+                    if sample_acq == 'entropy':
+                        sample_info_lst = entropy_lst[sample_lst]
+                    elif sample_acq == 'tld':
+                        sample_info_lst = tld_lst[sample_lst]
+
+                    if sample_order == 'highest':
+                        valid_sample_id = list((-sample_info_lst).argsort()[:valid_cls_sample_number])
+                    elif sample_order == 'lowest':
+                        valid_sample_id = list((sample_info_lst).argsort()[:valid_cls_sample_number])
+                    valid_dict[cls_id] = [int(_) for _ in sorted(list(np.array(sample_lst)[valid_sample_id]))]
+                    train_dict[cls_id] = [int(_) for _ in sorted(list(set(sample_lst)-set(valid_dict[cls_id])))]
+
+            train_json_path = './results/' + model_name +'_train.json'
+            valid_json_path = './results/' + model_name +'_valid.json'
+            with open(train_json_path, "w") as json_file:
+                json.dump(train_dict, json_file)
+            with open(valid_json_path, "w") as json_file:
+                json.dump(valid_dict, json_file)
+
+            train_list = []
+            valid_list = []
+            for _, v in train_dict.items():
+                train_list += v
+            for _, v in valid_dict.items():
+                valid_list += v
     
     return train_list, valid_list
 
@@ -222,6 +265,7 @@ def cifar_10_setter(teacher,
                     batch_size,
                     root,
                     model_name,
+                    per_class,
                     cls_acq,
                     cls_order,
                     delta,
@@ -255,6 +299,7 @@ def cifar_10_setter(teacher,
                                              teacher=teacher,
                                              train_set=train_set,
                                              model_name=model_name,
+                                             per_class=per_class,
                                              cls_acq=cls_acq,
                                              cls_order=cls_order,
                                              delta=delta,
@@ -285,6 +330,7 @@ def cifar_100_setter(teacher,
                      batch_size,
                      root,
                      model_name,
+                     per_class,
                      cls_acq,
                      cls_order,
                      delta,
@@ -318,6 +364,7 @@ def cifar_100_setter(teacher,
                                              teacher=teacher,
                                              train_set=train_set,
                                              model_name=model_name,
+                                             per_class=per_class,
                                              cls_acq=cls_acq,
                                              cls_order=cls_order,
                                              delta=delta,
@@ -347,6 +394,7 @@ def tiny_imagenet_setter(teacher,
                     mode,
                     batch_size,
                     model_name,
+                    per_class,
                     cls_acq,
                     cls_order,
                     delta,
@@ -376,7 +424,6 @@ def tiny_imagenet_setter(teacher,
     
     batch_size = batch_size
     
-    
     # Datasets
     train_set = datasets.ImageFolder(train_dir, transform=train_transforms)
     train_list, valid_list = set_train_valid(dataset='tiny-imagenet',
@@ -384,6 +431,7 @@ def tiny_imagenet_setter(teacher,
                                              teacher=teacher,
                                              train_set=train_set,
                                              model_name=model_name,
+                                             per_class=per_class,
                                              cls_acq=cls_acq,
                                              cls_order=cls_order,
                                              delta=delta,
@@ -413,6 +461,7 @@ def imagenet_setter(teacher,
                     mode,
                     batch_size,
                     model_name,
+                    per_class,
                     cls_acq,
                     cls_order,
                     delta,
@@ -452,6 +501,7 @@ def imagenet_setter(teacher,
                                              teacher=teacher,
                                              train_set=train_set,
                                              model_name=model_name,
+                                             per_class=per_class,
                                              cls_acq=cls_acq,
                                              cls_order=cls_order,
                                              delta=delta,

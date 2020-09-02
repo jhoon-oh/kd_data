@@ -30,6 +30,9 @@ def main(args):
                                                     str(args.seed),
                                                     str(args.logit))
     
+    if not args.per_class:
+        model_name += '_noclas'
+        
     result_path = './results'
     checkpoint_path = './model_checkpoints'
     model_path = model_name.split('/')
@@ -68,6 +71,7 @@ def main(args):
                                   batch_size=args.batch_size,
                                   root=args.root,
                                   model_name=model_name,
+                                  per_class=args.per_class,
                                   cls_acq=args.cls_acq,
                                   cls_order=args.cls_order,
                                   delta=args.delta,
@@ -114,6 +118,9 @@ if __name__ == '__main__':
     parser.add_argument('--mode', default='crop', type=str, help='augmentation strategy (vanilla, flip, crop, fastauto, auto)')
     parser.add_argument('--batch_size', default=128, type=int, help='batch size')
     parser.add_argument('--root', default='./data/', type=str, help='directory for dataset')
+
+    # dataset setting-related parser
+    parser.add_argument('--per_class', help='the ratio per class is considered or not', action='store_true')
     parser.add_argument('--cls_acq', default='random', type=str, help='class selection function: random or entropy')
     parser.add_argument('--cls_order', default='highest', type=str, help='class selection order: highest or lowest (if class selection function is entropy)')
     parser.add_argument('--delta', default=1.0, type=float, help='the ratio of valid classes')
@@ -122,7 +129,8 @@ if __name__ == '__main__':
     parser.add_argument('--zeta', default=1.0, type=float, help='the ratio of valid samples per train class')
     
     parser.add_argument('--seed', default=1, type=int, help='seed')
-        
+    
+    # model training-related parser
     parser.add_argument('--optimizer', default='sgd', type=str, help='which optimizer to use')
     parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
     parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
