@@ -16,8 +16,9 @@ from transforms.cutout import *
 
 __all__ = ['cifar_10_setter', 'cifar_100_setter', 'tiny_imagenet_setter', 'imagenet_setter']
 
-def set_train_valid(dataset, root, teacher, train_set, model_name, cls_acq, cls_order, delta, sample_acq, sample_order, zeta):
-    # cls_acq = 'random' or 'entropy'
+def set_train_valid(dataset, root, teacher, train_set, model_name,
+                    cls_acq, cls_order, delta, sample_acq, sample_order, zeta):
+    # cls_acq = 'random' or 'entropy' or 'tld'
     # cls_order = 'highest' or 'lowest' (when the acquisition fucntion for classes is entropy)
     # delta = the ratio of train classes
     # sample_acq = 'random' or 'entropy'
@@ -92,11 +93,14 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, cls_acq, cls_
 
         label_lst = []
         entropy_lst = []
-        for _, (label, entropy) in sample_info.items():
+        tld_lst = []
+        for _, (label, entropy, tld) in sample_info.items():
             label_lst.append(label)
             entropy_lst.append(entropy)
+            tld_lst.append(tld)
         label_lst = np.array(label_lst)
         entropy_lst = np.array(entropy_lst)
+        tld_lst = np.array(tld_lst)
 
         dic = {}
         for cls_id in sorted(np.unique(label_lst)):
@@ -112,19 +116,23 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, cls_acq, cls_
             valid_cls_id = sorted(random.sample(dic.keys(), valid_cls_number))
             train_cls_id = sorted(list(set(dic.keys())-set(valid_cls_id)))
 
-        elif cls_acq == 'entropy':
-            cls_entropy_lst = []
-            for _, v in dic.items():
-                cls_entropy_lst.append(np.mean(entropy_lst[v]))
-            cls_entropy_lst = np.array(cls_entropy_lst)
+        elif cls_acq == 'entropy' or cls_acq == 'tld':
+            cls_info_lst = []
+            if cls_acq == 'entropy':
+                for _, v in dic.items():
+                    cls_info_lst.append(np.mean(entropy_lst[v]))
+            elif cls_acq == 'tld':
+                for _, v in dic.items():
+                    cls_info_lst.append(np.mean(tld_lst[v]))
+            cls_info_lst = np.array(cls_info_lst)
 
             if cls_order == 'highest':
-                valid_cls_id = list((-cls_entropy_lst).argsort()[:valid_cls_number])
+                valid_cls_id = list((-cls_info_lst).argsort()[:valid_cls_number])
             elif cls_order == 'lowest':
-                valid_cls_id = list((cls_entropy_lst).argsort()[:valid_cls_number])
+                valid_cls_id = list((cls_info_lst).argsort()[:valid_cls_number])
             valid_cls_id = [str(_) for _ in valid_cls_id]
             train_cls_id = sorted(list(set(dic.keys())-set(valid_cls_id)))
-
+            
         for cls_id in valid_cls_id:
             train_dict[cls_id] = []
             valid_dict[cls_id] = [int(_) for _ in dic[cls_id]]
@@ -139,16 +147,19 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, cls_acq, cls_
                 valid_dict[cls_id] = [int(_) for _ in sorted(random.sample(list(sample_lst), valid_cls_sample_number))]
                 train_dict[cls_id] = [int(_) for _ in sorted(list(set(sample_lst)-set(valid_dict[cls_id])))]
 
-            elif sample_acq == 'entropy':
-                sample_entropy_lst = entropy_lst[sample_lst]
+            elif sample_acq == 'entropy' or sample_acq == 'tld':
+                if sample_acq == 'entropy':
+                    sample_info_lst = entropy_lst[sample_lst]
+                elif sample_acq == 'tld':
+                    sample_info_lst = tld_lst[sample_lst]
 
                 if sample_order == 'highest':
-                    valid_sample_id = list((-sample_entropy_lst).argsort()[:valid_cls_sample_number])
+                    valid_sample_id = list((-sample_info_lst).argsort()[:valid_cls_sample_number])
                 elif sample_order == 'lowest':
-                    valid_sample_id = list((sample_entropy_lst).argsort()[:valid_cls_sample_number])
+                    valid_sample_id = list((sample_info_lst).argsort()[:valid_cls_sample_number])
                 valid_dict[cls_id] = [int(_) for _ in sorted(list(np.array(sample_lst)[valid_sample_id]))]
                 train_dict[cls_id] = [int(_) for _ in sorted(list(set(sample_lst)-set(valid_dict[cls_id])))]
-
+                
         train_json_path = './results/' + model_name +'_train.json'
         valid_json_path = './results/' + model_name +'_valid.json'
         with open(train_json_path, "w") as json_file:

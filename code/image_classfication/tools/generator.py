@@ -15,6 +15,18 @@ def calc_entropy(prob):
     # get entropy
     return torch.sum(-prob * torch.log(prob), dim=1)
 
+def calc_tld(label, logit):
+    topk_logit, _ = torch.topk(logit, k=2, dim=1)
+    top1_logit = topk_logit[:, 0]
+    top2_logit = topk_logit[:, 1]
+    
+    gt_logit = logit[range(len(logit)), label]
+    
+    tld_list = torch.where(top1_logit == gt_logit,
+                           gt_logit-top2_logit,
+                           gt_logit-top1_logit)
+    return tld_list
+
 def generate_sample_info(teacher, dataset, root, model_name, device):
     if teacher is None:
         return
@@ -22,16 +34,18 @@ def generate_sample_info(teacher, dataset, root, model_name, device):
     sample_info_path = './results/' + "/".join(model_name.split("/")[:2])
     sample_info_path = os.path.join(sample_info_path, 'sample_info.json')
     
-    if os.path.isfile(sample_info_path):
-        return
+    # if os.path.isfile(sample_info_path):
+    #     return
         
     if dataset == 'cifar10' or dataset == 'cifar100':
         mean = [0.4914, 0.4822, 0.4465]
         std = [0.2023, 0.1994, 0.2010]
         
-        transform_list = transforms.Compose([transforms.ToTensor(),
+        transform_list = transforms.Compose([transforms.RandomCrop(32, padding=4), 
+                                             transforms.RandomHorizontalFlip(),
+                                             transforms.ToTensor(),
                                              transforms.Normalize(mean=mean, std=std)])
-    
+        
         batch_size = 128
 
         # Datasets
@@ -81,42 +95,46 @@ def generate_sample_info(teacher, dataset, root, model_name, device):
     teacher.to(device).eval()
         
     if dataset == 'cifar10' or dataset == 'cifar100':
-        labels = []
-        entropies = []
+        label_lst = []
+        entropy_lst = []
+        tld_lst = []
 
         for i, (image, label) in tqdm(enumerate(train_loader)):
             image = image.type(torch.FloatTensor).to(device)
             label = label.type(torch.LongTensor).to(device)
 
-            labels += label.tolist()
+            label_lst += label.tolist()
 
             logit = teacher(image)
             prob = F.softmax(logit, dim=1)
-            entropies += calc_entropy(prob).tolist()
+            entropy_lst += calc_entropy(prob).tolist()
+            tld_lst += calc_tld(label, logit).tolist()
 
         sample_info = {}
-        for i, (label, entropy) in enumerate(zip(labels, entropies)):
-            sample_info[i] = (label, entropy)
+        for i, (label, entropy, tld) in enumerate(zip(label_lst, entropy_lst, tld_lst)):
+            sample_info[i] = (label, entropy, tld)
 
         with open(sample_info_path, "w") as json_file:
             json.dump(sample_info, json_file)
                 
     elif dataset == 'tiny-imagenet' or dataset == 'imagenet':
         for idx, (image, label) in enumerate(train_loader):
-            labels = []
-            entropies = []
+            label_lst = []
+            entropy_lst = []
+            tld_lst = []
             
             image = image.type(torch.FloatTensor).to(device)
             label = label.type(torch.LongTensor).to(device)
             
-            labels += label.tolist()
+            label_lst += label.tolist()
             logit = teacher(image)
             prob = F.softmax(logit, dim=1)
-            entropies += calc_entropy(prob).tolist()
+            entropy_lst += calc_entropy(prob).tolist()
+            tld_lst += calc_tld(label, logit).tolist()
             
             sample_info = {}
-            for i, (label, entropy) in enumerate(zip(labels, entropies)):
-                sample_info[i] = (label, entropy)
+            for i, (label, entropy, tld) in enumerate(zip(label_lst, entropy_lst, tld_lst)):
+                sample_info[i] = (label, entropy, tld)
             sample_info_epoch_path = sample_info_path.replace('info', 'info{}'.format(idx))
             
             with open(sample_info_epoch_path, "w") as json_file:

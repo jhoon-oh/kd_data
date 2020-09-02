@@ -18,7 +18,6 @@ def main(args):
     np.random.seed(args.seed)
     random.seed(args.seed)
     
-    
     model_name = '{}'.format(args.dataset) + \
                  '/{}/{}'.format(str(args.teacher), str(args.student)) + \
                  '/alp_{}_T_{}'.format(str(args.alpha), str(args.temperature)) + \
