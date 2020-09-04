@@ -17,17 +17,16 @@ from transforms.cutout import *
 __all__ = ['cifar_10_setter', 'cifar_100_setter', 'tiny_imagenet_setter', 'imagenet_setter']
 
 def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
-                    cls_acq, cls_order, delta, sample_acq, sample_order, zeta):
+                    cls_acq, cls_lower_qnt, cls_upper_qnt, sample_acq, sample_lower_qnt, sample_upper_qnt):
     # cls_acq = 'random' or 'entropy' or 'tld'
-    # cls_order = 'highest' or 'lowest' (when the acquisition fucntion for classes is entropy)
-    # delta = the ratio of train classes
+    # cls_lower_qnt, cls_upper_qnt = the qunantiles of lower bound and upper bound, respectively, for training.
     # sample_acq = 'random' or 'entropy' or 'tld'
-    # sample_order = 'highest' or 'lowest' (when the acquisition fucntion for samples is entropy)
-    # zeta = the ratio of train samples per train class
-    # e.g., delta=1.0, zeta=1.0 -> train classes # = 100 & train samples # per train class = 500
-    # e.g., delta=0.9, zeta=0.0 -> train classes # = 90 & train samples # per train class = 500
-    # e.g., delta=0.0, zeta=0.9 -> train classes # = 100 & train samples # per train class = 450
-    # e.g., delta=0.9, zeta=0.9 -> train classes # = 90 & train samples # per train class = 450
+    # sample_lower_qnt, sample_upper_qnt = the qunantiles of lower bound and upper bound, respectively, for training.
+    # e.g., cls_lower_qnt=0.0, cls_upper_qnt=0.0 & sample_lower_qnt=0.0, sample_upper_qnt=1.0
+    #       -> all data
+    # e.g., cls_lower_qnt=0.0, cls_upper_qnt=0.0 & sample_lower_qnt=0.0, sample_upper_qnt=0.1
+    #       -> top 10% lowest samples (in terms of entropy or tld)
+    
     
     if teacher is None:
         label_lst = []
@@ -53,7 +52,7 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
         valid_dict = {}
 
         total_cls_number = len(dic.keys())
-        valid_cls_number = int(total_cls_number * (1-delta))
+        valid_cls_number = int(total_cls_number * (1-(cls_upper_qnt-cls_lower_qnt)))
 
         valid_cls_id = sorted(random.sample(dic.keys(), valid_cls_number))
         train_cls_id = sorted(list(set(dic.keys())-set(valid_cls_id)))
@@ -66,7 +65,7 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
             sample_lst = dic[cls_id]
 
             total_cls_sample_number = len(sample_lst)
-            valid_cls_sample_number = int(total_cls_sample_number * (1-zeta))
+            valid_cls_sample_number = int(total_cls_sample_number * (1-(sample_upper_qnt-sample_lower_qnt)))
 
             valid_dict[cls_id] = [int(_) for _ in sorted(random.sample(list(sample_lst), valid_cls_sample_number))]
             train_dict[cls_id] = [int(_) for _ in sorted(list(set(sample_lst)-set(valid_dict[cls_id])))]
@@ -106,7 +105,7 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
         if not per_class:
             total_sample_list = list(range(len(label_lst)))
             total_sample_number = len(total_sample_list)
-            valid_sample_number = int(total_sample_number * (1-zeta))
+            valid_sample_number = int(total_sample_number * (1-(sample_upper_qnt-sample_lower_qnt)))
 
             if sample_acq == 'random':
                 valid_list = [int(_) for _ in sorted(random.sample(total_sample_list, valid_sample_number))]
@@ -118,10 +117,8 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
                 elif sample_acq == 'tld':
                     sample_info_lst = tld_lst
 
-                if sample_order == 'highest':
-                    valid_list = [int(_) for _ in list((-sample_info_lst).argsort()[:valid_sample_number])]
-                elif sample_order == 'lowest':
-                    valid_list = [int(_) for _ in list((sample_info_lst).argsort()[:valid_sample_number])]
+                valid_list = [int(_) for _ in list((sample_info_lst).argsort()[int(total_sample_number*sample_lower_qnt):
+                                                                               int(total_sample_number*sample_upper_qnt)])]
                 train_list = [int(_) for _ in sorted(list(set(total_sample_list)-set(valid_list)))]              
 
             train_dict = {}
@@ -153,7 +150,7 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
             valid_dict = {}
 
             total_cls_number = len(dic.keys())
-            valid_cls_number = int(total_cls_number * (1-delta))
+            valid_cls_number = int(total_cls_number * (1-(cls_upper_qnt-cls_lower_qnt)))
 
             if cls_acq == 'random':
                 valid_cls_id = sorted(random.sample(dic.keys(), valid_cls_number))
@@ -169,10 +166,8 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
                         cls_info_lst.append(np.mean(tld_lst[v]))
                 cls_info_lst = np.array(cls_info_lst)
 
-                if cls_order == 'highest':
-                    valid_cls_id = list((-cls_info_lst).argsort()[:valid_cls_number])
-                elif cls_order == 'lowest':
-                    valid_cls_id = list((cls_info_lst).argsort()[:valid_cls_number])
+                valid_cls_id = list((cls_info_lst).argsort()[int(total_cls_number*cls_lower_qnt):
+                                                             int(total_cls_number*cls_upper_qnt)])
                 valid_cls_id = [str(_) for _ in valid_cls_id]
                 train_cls_id = sorted(list(set(dic.keys())-set(valid_cls_id)))
 
@@ -184,7 +179,7 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
                 sample_lst = dic[cls_id]
 
                 total_cls_sample_number = len(sample_lst)
-                valid_cls_sample_number = int(total_cls_sample_number * (1-zeta))
+                valid_cls_sample_number = int(total_cls_sample_number * (1-(sample_upper_qnt-sample_lower_qnt)))
 
                 if sample_acq == 'random':
                     valid_dict[cls_id] = [int(_) for _ in sorted(random.sample(list(sample_lst), valid_cls_sample_number))]
@@ -196,10 +191,8 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
                     elif sample_acq == 'tld':
                         sample_info_lst = tld_lst[sample_lst]
 
-                    if sample_order == 'highest':
-                        valid_sample_id = list((-sample_info_lst).argsort()[:valid_cls_sample_number])
-                    elif sample_order == 'lowest':
-                        valid_sample_id = list((sample_info_lst).argsort()[:valid_cls_sample_number])
+                    valid_sample_id = list((sample_info_lst).argsort()[int(total_cls_sample_number*sample_lower_qnt):
+                                                                       int(total_cls_sample_number*sample_upper_qnt)])
                     valid_dict[cls_id] = [int(_) for _ in sorted(list(np.array(sample_lst)[valid_sample_id]))]
                     train_dict[cls_id] = [int(_) for _ in sorted(list(set(sample_lst)-set(valid_dict[cls_id])))]
 
@@ -267,11 +260,11 @@ def cifar_10_setter(teacher,
                     model_name,
                     per_class,
                     cls_acq,
-                    cls_order,
-                    delta,
+                    cls_lower_qnt,
+                    cls_upper_qnt,
                     sample_acq,
-                    sample_order,
-                    zeta,
+                    sample_lower_qnt,
+                    sample_upper_qnt,
                     pin_memory=False,
                     num_workers=4,
                     download=True,
@@ -301,11 +294,11 @@ def cifar_10_setter(teacher,
                                              model_name=model_name,
                                              per_class=per_class,
                                              cls_acq=cls_acq,
-                                             cls_order=cls_order,
-                                             delta=delta,
+                                             cls_lower_qnt=cls_lower_qnt,
+                                             cls_upper_qnt=cls_upper_qnt,
                                              sample_acq=sample_acq,
-                                             sample_order=sample_order,
-                                             zeta=zeta)
+                                             sample_lower_qnt=sample_lower_qnt,
+                                             sample_upper_qnt=sample_upper_qnt)
     cifar10_train_set = Subset(train_set, train_list)
     cifar10_valid_set = Subset(train_set, valid_list)
     
@@ -332,11 +325,11 @@ def cifar_100_setter(teacher,
                      model_name,
                      per_class,
                      cls_acq,
-                     cls_order,
-                     delta,
+                     cls_lower_qnt,
+                     cls_upper_qnt,
                      sample_acq,
-                     sample_order,
-                     zeta,
+                     sample_lower_qnt,
+                     sample_upper_qnt,
                      pin_memory=False,
                      num_workers=4,
                      download=True,
@@ -366,11 +359,11 @@ def cifar_100_setter(teacher,
                                              model_name=model_name,
                                              per_class=per_class,
                                              cls_acq=cls_acq,
-                                             cls_order=cls_order,
-                                             delta=delta,
+                                             cls_lower_qnt=cls_lower_qnt,
+                                             cls_upper_qnt=sample_lower_qnt,
                                              sample_acq=sample_acq,
-                                             sample_order=sample_order,
-                                             zeta=zeta)
+                                             sample_lower_qnt=sample_lower_qnt,
+                                             sample_upper_qnt=sample_upper_qnt)
     cifar100_train_set = Subset(train_set, train_list)
     cifar100_valid_set = Subset(train_set, valid_list)
     
@@ -396,11 +389,11 @@ def tiny_imagenet_setter(teacher,
                     model_name,
                     per_class,
                     cls_acq,
-                    cls_order,
-                    delta,
+                    cls_lower_qnt,
+                    cls_upper_qnt,
                     sample_acq,
-                    sample_order,
-                    zeta,
+                    sample_lower_qnt,
+                    sample_upper_qnt,
                     root='/home/taehyeon/tiny-imagenet/',
                     pin_memory=False,
                     num_workers=4,
@@ -433,11 +426,11 @@ def tiny_imagenet_setter(teacher,
                                              model_name=model_name,
                                              per_class=per_class,
                                              cls_acq=cls_acq,
-                                             cls_order=cls_order,
-                                             delta=delta,
+                                             cls_lower_qnt=cls_lower_qnt,
+                                             cls_upper_qnt=cls_upper_qnt,
                                              sample_acq=sample_acq,
-                                             sample_order=sample_order,
-                                             zeta=zeta)
+                                             sample_lower_qnt=sample_lower_qnt,
+                                             sample_upper_qnt=sample_upper_qnt)
     tiny_imagenet_train_set = Subset(train_set, train_list)
     tiny_imagenet_valid_set = Subset(train_set, valid_list)
     tiny_imagenet_test_set = datasets.ImageFolder(test_dir, transform=test_transforms)
@@ -463,11 +456,11 @@ def imagenet_setter(teacher,
                     model_name,
                     per_class,
                     cls_acq,
-                    cls_order,
-                    delta,
+                    cls_lower_qnt,
+                    cls_upper_qnt,
                     sample_acq,
-                    sample_order,
-                    zeta,
+                    sample_lower_qnt,
+                    sample_upper_qnt,
                     root='/home/taehyeon/ImageNet/Data/',
                     pin_memory=False,
                     num_workers=4,
@@ -503,11 +496,11 @@ def imagenet_setter(teacher,
                                              model_name=model_name,
                                              per_class=per_class,
                                              cls_acq=cls_acq,
-                                             cls_order=cls_order,
-                                             delta=delta,
+                                             cls_lower_qnt=cls_lower_qnt,
+                                             cls_upper_qnt=cls_upper_qnt,
                                              sample_acq=sample_acq,
-                                             sample_order=sample_order,
-                                             zeta=zeta)
+                                             sample_lower_qnt=sample_lower_qnt,
+                                             sample_upper_qnt=sample_upper_qnt)
     imagenet_train_set = Subset(train_set, train_list)
     imagenet_valid_set = Subset(train_set, valid_list)
     imagenet_test_set = datasets.ImageFolder(test_dir, transform=test_transforms)

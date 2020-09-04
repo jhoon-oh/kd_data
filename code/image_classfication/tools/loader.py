@@ -107,11 +107,11 @@ def load_dataloader(dataset,
                     model_name,
                     per_class,
                     cls_acq,
-                    cls_order,
-                    zeta,
+                    cls_lower_qnt,
+                    cls_upper_qnt,
                     sample_acq,
-                    sample_order,
-                    delta):
+                    sample_lower_qnt,
+                    sample_upper_qnt):
     
     if dataset == 'cifar10':
         dataloaders, _ = cifar_10_setter(teacher=teacher,
@@ -121,11 +121,11 @@ def load_dataloader(dataset,
                                          model_name=model_name,
                                          per_class=per_class,
                                          cls_acq=cls_acq,
-                                         cls_order=cls_order,
-                                         zeta=zeta,
+                                         cls_lower_qnt=cls_lower_qnt,
+                                         cls_upper_qnt=cls_upper_qnt,
                                          sample_acq=sample_acq,
-                                         sample_order=sample_order,
-                                         delta=delta)
+                                         sample_lower_qnt=sample_lower_qnt,
+                                         sample_upper_qnt=sample_upper_qnt)
         
     elif dataset == 'cifar100':
         dataloaders, _ = cifar_100_setter(teacher=teacher,
@@ -135,11 +135,11 @@ def load_dataloader(dataset,
                                           model_name=model_name,
                                           per_class=per_class,
                                           cls_acq=cls_acq,
-                                          cls_order=cls_order,
-                                          zeta=zeta,
+                                          cls_lower_qnt=cls_lower_qnt,
+                                          cls_upper_qnt=cls_upper_qnt,
                                           sample_acq=sample_acq,
-                                          sample_order=sample_order,
-                                          delta=delta)
+                                          sample_lower_qnt=sample_lower_qnt,
+                                          sample_upper_qnt=sample_upper_qnt)
     elif dataset == 'imagenet':
         dataloaders, _ = imagenet_setter(teacher=teacher,
                                          mode=mode,
@@ -148,11 +148,11 @@ def load_dataloader(dataset,
                                          model_name=model_name,
                                          per_class=per_class,
                                          cls_acq=cls_acq,
-                                         cls_order=cls_order,
-                                         zeta=zeta,
+                                         cls_lower_qnt=cls_lower_qnt,
+                                         cls_upper_qnt=cls_upper_qnt,
                                          sample_acq=sample_acq,
-                                         sample_order=sample_order,
-                                         delta=delta)
+                                         sample_lower_qnt=sample_lower_qnt,
+                                         sample_upper_qnt=sample_upper_qnt)
     elif dataset == 'tiny-imagenet':
         dataloaders, _ = tiny_imagenet_setter(teacher=teacher,
                                          mode=mode,
@@ -161,10 +161,10 @@ def load_dataloader(dataset,
                                          model_name=model_name,
                                          per_class=per_class,
                                          cls_acq=cls_acq,
-                                         cls_order=cls_order,
-                                         zeta=zeta,
+                                         cls_lower_qnt=cls_lower_qnt,
+                                         cls_upper_qnt=cls_upper_qnt,
                                          sample_acq=sample_acq,
-                                         sample_order=sample_order,
-                                         delta=delta)
+                                         sample_lower_qnt=sample_lower_qnt,
+                                         sample_upper_qnt=sample_upper_qnt)
         
     return dataloaders

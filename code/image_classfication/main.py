@@ -21,14 +21,14 @@ def main(args):
     model_name = '{}'.format(args.dataset) + \
                  '/{}/{}'.format(str(args.teacher), str(args.student)) + \
                  '/alp_{}_T_{}'.format(str(args.alpha), str(args.temperature)) + \
-                 '/{}_{}_{}_{}_{}_{}_seed{}_{}'.format(args.cls_acq,
-                                                    args.cls_order,
-                                                    str(args.delta),
-                                                    args.sample_acq,
-                                                    args.sample_order,
-                                                    str(args.zeta),
-                                                    str(args.seed),
-                                                    str(args.logit))
+                 '/{}_{}-{}_{}_{}-{}_seed{}_{}'.format(args.cls_acq,
+                                                       str(args.cls_lower_qnt),
+                                                       str(args.cls_upper_qnt),
+                                                       args.sample_acq,
+                                                       str(args.sample_lower_qnt),
+                                                       str(args.sample_upper_qnt),
+                                                       str(args.seed),
+                                                       str(args.logit))
     
     if not args.per_class:
         model_name += '_noclas'
@@ -73,11 +73,11 @@ def main(args):
                                   model_name=model_name,
                                   per_class=args.per_class,
                                   cls_acq=args.cls_acq,
-                                  cls_order=args.cls_order,
-                                  delta=args.delta,
+                                  cls_lower_qnt=args.cls_lower_qnt,
+                                  cls_upper_qnt=args.cls_upper_qnt,
                                   sample_acq=args.sample_acq,
-                                  sample_order=args.sample_order,
-                                  zeta=args.zeta)
+                                  sample_lower_qnt=args.sample_lower_qnt,
+                                  sample_upper_qnt=args.sample_upper_qnt)
     
     batch_params = [module for module in student.parameters() if module.ndimension() == 1]
     other_params = [module for module in student.parameters() if module.ndimension() > 1]
@@ -122,11 +122,11 @@ if __name__ == '__main__':
     # dataset setting-related parser
     parser.add_argument('--per_class', help='the ratio per class is considered or not', action='store_true')
     parser.add_argument('--cls_acq', default='random', type=str, help='class selection function: random or entropy')
-    parser.add_argument('--cls_order', default='highest', type=str, help='class selection order: highest or lowest (if class selection function is entropy)')
-    parser.add_argument('--delta', default=1.0, type=float, help='the ratio of valid classes')
+    parser.add_argument('--cls_lower_qnt', default=0.0, type=float, help='class selection lower quantile')
+    parser.add_argument('--cls_upper_qnt', default=1.0, type=float, help='class selection upper quantile')
     parser.add_argument('--sample_acq', default='random', type=str, help='sample selection function: random or entropy')
-    parser.add_argument('--sample_order', default='highest', type=str, help='sample selection order: highest or lowest (if sample selection function is entropy)')
-    parser.add_argument('--zeta', default=1.0, type=float, help='the ratio of valid samples per train class')
+    parser.add_argument('--sample_lower_qnt', default=0.0, type=float, help='sample selection lower quantile')
+    parser.add_argument('--sample_upper_qnt', default=1.0, type=float, help='sample selection upper quantile')
     
     parser.add_argument('--seed', default=1, type=int, help='seed')
     
