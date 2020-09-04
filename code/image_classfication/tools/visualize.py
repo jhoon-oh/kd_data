@@ -115,20 +115,34 @@ def histogram_tld(teacher_df, student_df):
     
     fig.show()
 
-def quantile_tld(teacher_df, student_df, data_type="train"):
+def quantile_tld(teacher_df, student_df, num_threshold=4, sep=False,data_type="train"):
 
     teacher_df_plot = teacher_df.copy()
     student_df_plot = student_df.copy()
-    teacher_df_plot, student_df_plot = make_quantile_column(teacher_df_plot, student_df_plot)
+    teacher_df_plot, student_df_plot = make_quantile_column(teacher_df_plot,\
+                                                            student_df_plot, num_threshold=num_threshold)
     student_df_plot.sort_values("teacher_class", inplace=True)
-    fig = px.histogram(student_df_plot[student_df_plot.data_type==data_type], x="tld", color="teacher_class",  histnorm='percent' , title="Student {} TLD wrt teacher quantile".format(data_type))
-    fig.update_xaxes(range=[-15, 25])
-    fig.show()
+    if sep:
+        fig = go.Figure()
+        grps = student_df_plot.groupby("teacher_class")
+        for idx, g in enumerate(grps.groups.keys()):
+            gr = grps.get_group(g)
+            fig.add_trace(go.Histogram(x=gr[gr.data_type==data_type].tld, \
+                                       opacity=0.5, name=idx, histnorm='percent'))
+        fig.update_xaxes(range=[-15,25])
+        fig.update_layout(barmode="overlay",title="Student {} TLD wrt teacher quantile".format(data_type))
+        
+        fig.show()
+    else :
+        fig = px.histogram(student_df_plot[student_df_plot.data_type==data_type], x="tld", color="teacher_class",  histnorm='percent' , title="Student {} TLD wrt teacher quantile".format(data_type))
+        fig.update_xaxes(range=[-15, 25])
+        fig.show()
     
-def quantile_acc(teacher_df, student_df, sub=False):
+def quantile_acc(teacher_df, student_df, num_threshold=4 ,sub=False):
     teacher_df_plot = teacher_df.copy()
     student_df_plot = student_df.copy()
-    teacher_df_plot, student_df_plot = make_quantile_column(teacher_df_plot, student_df_plot, sub)
+    teacher_df_plot, student_df_plot = make_quantile_column(teacher_df_plot,\
+                                                            student_df_plot, num_threshold ,sub)
     fig =make_subplots(rows=1, cols=2, subplot_titles=("Student", "Teacher"))
     t_list =[0,1,2,3]
     accs = defaultdict(list)
@@ -155,13 +169,13 @@ def quantile_acc(teacher_df, student_df, sub=False):
     fig.update_layout(title="ACC wrt Threshold")
     fig.show()    
     
-def make_quantile_column(teacher_df,student_df, sub=False):
+def make_quantile_column(teacher_df,student_df, num_threshold=4,sub=False):
     teacher_df_plot = teacher_df.copy()
     student_df_plot = student_df.copy()
 
     teacher_df_plot["sub"] = teacher_df_plot.tld - student_df_plot.tld
 
-    qs =[0, 0.25, 0.5, 0.75]
+    qs =np.linspace(0,1, num_threshold+1)
 
     teacher_class = pd.Series(dtype=int)
     for data_type in ["train", "test"]:
