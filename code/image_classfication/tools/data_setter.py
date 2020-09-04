@@ -117,9 +117,9 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
                 elif sample_acq == 'tld':
                     sample_info_lst = tld_lst
 
-                valid_list = [int(_) for _ in list((sample_info_lst).argsort()[int(total_sample_number*sample_lower_qnt):
+                train_list = [int(_) for _ in list((sample_info_lst).argsort()[int(total_sample_number*sample_lower_qnt):
                                                                                int(total_sample_number*sample_upper_qnt)])]
-                train_list = [int(_) for _ in sorted(list(set(total_sample_list)-set(valid_list)))]              
+                valid_list = [int(_) for _ in sorted(list(set(total_sample_list)-set(train_list)))]
 
             train_dict = {}
             valid_dict = {}
@@ -166,10 +166,10 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
                         cls_info_lst.append(np.mean(tld_lst[v]))
                 cls_info_lst = np.array(cls_info_lst)
 
-                valid_cls_id = list((cls_info_lst).argsort()[int(total_cls_number*cls_lower_qnt):
+                train_cls_id = list((cls_info_lst).argsort()[int(total_cls_number*cls_lower_qnt):
                                                              int(total_cls_number*cls_upper_qnt)])
-                valid_cls_id = [str(_) for _ in valid_cls_id]
-                train_cls_id = sorted(list(set(dic.keys())-set(valid_cls_id)))
+                train_cls_id = [str(_) for _ in train_cls_id]
+                valid_cls_id = sorted(list(set(dic.keys())-set(train_cls_id)))
 
             for cls_id in valid_cls_id:
                 train_dict[cls_id] = []
@@ -191,10 +191,10 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
                     elif sample_acq == 'tld':
                         sample_info_lst = tld_lst[sample_lst]
 
-                    valid_sample_id = list((sample_info_lst).argsort()[int(total_cls_sample_number*sample_lower_qnt):
+                    train_sample_id = list((sample_info_lst).argsort()[int(total_cls_sample_number*sample_lower_qnt):
                                                                        int(total_cls_sample_number*sample_upper_qnt)])
-                    valid_dict[cls_id] = [int(_) for _ in sorted(list(np.array(sample_lst)[valid_sample_id]))]
-                    train_dict[cls_id] = [int(_) for _ in sorted(list(set(sample_lst)-set(valid_dict[cls_id])))]
+                    train_dict[cls_id] = [int(_) for _ in sorted(list(np.array(sample_lst)[train_sample_id]))]
+                    valid_dict[cls_id] = [int(_) for _ in sorted(list(set(sample_lst)-set(train_dict[cls_id])))]
 
             train_json_path = './results/' + model_name +'_train.json'
             valid_json_path = './results/' + model_name +'_valid.json'
