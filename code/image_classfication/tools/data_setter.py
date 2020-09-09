@@ -65,7 +65,7 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
             sample_lst = dic[cls_id]
 
             total_cls_sample_number = len(sample_lst)
-            valid_cls_sample_number = int(total_cls_sample_number * (1-(sample_upper_qnt-sample_lower_qnt)))
+            valid_cls_sample_number = int(round(total_cls_sample_number * (1-(sample_upper_qnt-sample_lower_qnt)),2))
 
             valid_dict[cls_id] = [int(_) for _ in sorted(random.sample(list(sample_lst), valid_cls_sample_number))]
             train_dict[cls_id] = [int(_) for _ in sorted(list(set(sample_lst)-set(valid_dict[cls_id])))]
@@ -105,7 +105,7 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
         if not per_class:
             total_sample_list = list(range(len(label_lst)))
             total_sample_number = len(total_sample_list)
-            valid_sample_number = int(total_sample_number * (1-(sample_upper_qnt-sample_lower_qnt)))
+            valid_sample_number = int(round(total_sample_number * (1-(sample_upper_qnt-sample_lower_qnt)),2))
 
             if sample_acq == 'random':
                 valid_list = [int(_) for _ in sorted(random.sample(total_sample_list, valid_sample_number))]
@@ -150,7 +150,7 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
             valid_dict = {}
 
             total_cls_number = len(dic.keys())
-            valid_cls_number = int(total_cls_number * (1-(cls_upper_qnt-cls_lower_qnt)))
+            valid_cls_number = int(round(total_cls_number * (1-(cls_upper_qnt-cls_lower_qnt)),2))
 
             if cls_acq == 'random':
                 valid_cls_id = sorted(random.sample(dic.keys(), valid_cls_number))
@@ -179,7 +179,7 @@ def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
                 sample_lst = dic[cls_id]
 
                 total_cls_sample_number = len(sample_lst)
-                valid_cls_sample_number = int(total_cls_sample_number * (1-(sample_upper_qnt-sample_lower_qnt)))
+                valid_cls_sample_number = int(round(total_cls_sample_number * (1-(sample_upper_qnt-sample_lower_qnt)),2))
 
                 if sample_acq == 'random':
                     valid_dict[cls_id] = [int(_) for _ in sorted(random.sample(list(sample_lst), valid_cls_sample_number))]
@@ -349,7 +349,7 @@ def cifar_100_setter(teacher,
     ])
     
     batch_size = batch_size
-    
+        
     # Datasets
     train_set = datasets.CIFAR100(root, train=True, transform=train_transforms, download=download)
     train_list, valid_list = set_train_valid(dataset='cifar100',
@@ -360,7 +360,7 @@ def cifar_100_setter(teacher,
                                              per_class=per_class,
                                              cls_acq=cls_acq,
                                              cls_lower_qnt=cls_lower_qnt,
-                                             cls_upper_qnt=sample_lower_qnt,
+                                             cls_upper_qnt=cls_upper_qnt,
                                              sample_acq=sample_acq,
                                              sample_lower_qnt=sample_lower_qnt,
                                              sample_upper_qnt=sample_upper_qnt)
