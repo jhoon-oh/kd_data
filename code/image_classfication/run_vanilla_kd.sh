@@ -11,5 +11,17 @@ python main.py --device=cuda:0 \
                --alpha=1.0 \
                --temperature=20.0 \
                --seed=9999
+
+# MSE loss
+python main.py --device=cuda:0 \
+               --teacher=wrn-28-4 \
+               --student=wrn-16-2 \
+               --dataset=cifar100 \
+               --batch_size=128 \
+               --num_epochs=200 \
+               --mode=crop \
+               --nesterov \
+               --logit=l2_logit \
+               --seed=9999
                
 echo "finished"
