@@ -227,7 +227,7 @@ def get_dataframe(teacher, student, teacher_checkpoint, student_checkpoint, nets
         teacher = teacher.to(device)
         teacher.eval()
         
-    generate_sample_info(teacher, dataset="cifar100", root='/home/osilab7/hdd/cifar',
+    generate_sample_info(teacher, dataset="cifar100", root='./data/',
                     model_name="/".join(student_checkpoint.split('/')[2:])
                     ,device=device)
     
@@ -235,14 +235,15 @@ def get_dataframe(teacher, student, teacher_checkpoint, student_checkpoint, nets
     dataloaders, dataset_size = cifar_100_setter(teacher=teacher,
                                              mode="crop",
                                              batch_size=128,
-                                             root='/home/osilab7/hdd/cifar',
+                                             root='./data/',
                                              model_name="/".join(student_checkpoint.split('/')[2:]),
                                              cls_acq='random',
-                                             cls_order='highest',
-                                             zeta=1.0,
+                                             per_class=True,
+                                             cls_lower_qnt=0.0,
+                                             cls_upper_qnt=1.0,
                                              sample_acq='random',
-                                             sample_order='highest',
-                                             delta=1.0)
+                                             sample_lower_qnt=0.0,
+                                             sample_upper_qnt=1.0)
     
     teacher = teacher.to(device)
     student = student.to(device)

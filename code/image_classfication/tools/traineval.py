@@ -58,7 +58,6 @@ def train_model(model_name, device, dataloaders, teacher, student, optimizer, nu
                     inf_gradient = inf_grad(pred_label, teacher_label, pred_label.shape[1], device)
                     pred_label.backward(args.alpha * inf_gradient, retain_graph=True)
                     loss = nn.CrossEntropyLoss()(pred_label, label) * (1 - args.alpha)
-                    loss.backward()
                 else:
                     loss = criterion(pred_label, label, teacher_label, args.alpha, args.temperature)
             else:

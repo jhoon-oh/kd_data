@@ -3,7 +3,7 @@
 # teacher is None
 
 python main.py --device=cuda:0 \
-               --student=wrn-28-4 \
+               --student=wrn-28-2 \
                --dataset=cifar100 \
                --batch_size=128 \
                --num_epochs=200 \

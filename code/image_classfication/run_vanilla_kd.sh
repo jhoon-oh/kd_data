@@ -1,27 +1,17 @@
 #!/bin/bash
-
-python main.py --device=cuda:0 \
-               --teacher=wrn-28-4 \
-               --student=wrn-16-2 \
-               --dataset=cifar100 \
-               --batch_size=128 \
-               --num_epochs=200 \
-               --mode=crop \
-               --nesterov \
-               --alpha=1.0 \
-               --temperature=20.0 \
-               --seed=9999
-
-# MSE loss
-python main.py --device=cuda:0 \
-               --teacher=wrn-28-4 \
-               --student=wrn-16-2 \
-               --dataset=cifar100 \
-               --batch_size=128 \
-               --num_epochs=200 \
-               --mode=crop \
-               --nesterov \
-               --logit=l2_logit \
-               --seed=9999
-               
+temp="1.0 3.0 5.0"
+for tau in $temp
+do
+    python main.py --device=cuda:0 \
+                   --teacher=wrn-28-4 \
+                   --student=wrn-28-4 \
+                   --dataset=cifar100 \
+                   --batch_size=128 \
+                   --num_epochs=200 \
+                   --mode=crop \
+                   --nesterov \
+                   --alpha=1.0 \
+                   --temperature=$tau \
+                   --seed=9999
+done
 echo "finished"

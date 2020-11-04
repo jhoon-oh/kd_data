@@ -90,7 +90,8 @@ def diri_loss(output, label, alpha, confusion, gpu):
 def inf_grad(pred, target, classes, gpu):
     custom_grad = classes * (pred-target) - torch.sum(pred-target, dim=1, keepdim=True)
     #print(torch.sum(pred-target, dim=1, keepdim=True).shape)
-    return custom_grad/(classes*classes)/pred.shape[0]
+
+    return custom_grad/(classes*classes) /pred.shape[0]
 
 def ze_grad(pred, target, classes, gpu):
     pred_grad = torch.zeros_like(pred).to(gpu)
