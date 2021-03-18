@@ -14,7 +14,7 @@ from tqdm import tqdm
 from transforms.autoaugment import CIFAR10Policy, ImageNetPolicy
 from transforms.cutout import *
 
-__all__ = ['cifar_10_setter', 'cifar_100_setter', 'tiny_imagenet_setter', 'imagenet_setter']
+__all__ = ['cifar_10_setter', 'cifar_100_setter', 'tiny_imagenet_setter', 'imagenet_setter', 'svhn_setter']
 
 def set_train_valid(dataset, root, teacher, train_set, model_name, per_class,
                     cls_acq, cls_lower_qnt, cls_upper_qnt, sample_acq, sample_lower_qnt, sample_upper_qnt):
@@ -241,6 +241,13 @@ def train_transform(mean, std, data, mode):
                                 transforms.RandomHorizontalFlip(),
                                 transforms.ToTensor(),
                                 transforms.Normalize(mean=[0.4802, 0.4481, 0.3975], std=[0.2770, 0.2691, 0.2821])]
+        
+    elif data == 'svhn':
+        train_transform_list = [transforms.RandomCrop(32, padding=4),
+                                transforms.RandomHorizontalFlip(),
+                                transforms.ToTensor(),
+                                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])]
+        
     elif data == 'imagenet':
         if mode == 'flip':
             train_transform_list = [transforms.RandomHorizontalFlip()] + train_transform_list
@@ -252,6 +259,71 @@ def train_transform(mean, std, data, mode):
     
     return train_transform_list
 
+
+def svhn_setter(teacher,
+                    mode,
+                    batch_size,
+                    root,
+                    model_name,
+                    per_class,
+                    cls_acq,
+                    cls_lower_qnt,
+                    cls_upper_qnt,
+                    sample_acq,
+                    sample_lower_qnt,
+                    sample_upper_qnt,
+                    pin_memory=False,
+                    num_workers=4,
+                    download=True,
+                    fixed_valid=True):
+    if fixed_valid:
+        random.seed(2020)
+    # Data augmentation and normalization for training
+    # Just normalization for validation
+    mean = [0.4914, 0.4822, 0.4465]
+    std = [0.2023, 0.1994, 0.2010]
+    train_transform_list = train_transform(mean, std, data='cifar10', mode=mode)
+
+    train_transforms = transforms.Compose(train_transform_list)
+    test_transforms = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=mean, std=std),
+    ])
+    
+    batch_size = batch_size
+    
+    # Datasets
+    train_set = datasets.SVHN(root, train=True, transform=train_transforms, download=download) # train transform applied
+    train_list, valid_list = set_train_valid(dataset='svhn',
+                                             root=root,
+                                             teacher=teacher,
+                                             train_set=train_set,
+                                             model_name=model_name,
+                                             per_class=per_class,
+                                             cls_acq=cls_acq,
+                                             cls_lower_qnt=cls_lower_qnt,
+                                             cls_upper_qnt=cls_upper_qnt,
+                                             sample_acq=sample_acq,
+                                             sample_lower_qnt=sample_lower_qnt,
+                                             sample_upper_qnt=sample_upper_qnt)
+    svhn_train_set = Subset(train_set, train_list)
+    svhn_valid_set = Subset(train_set, valid_list)
+    
+    svhn_test_set = datasets.SVHN(root, train=False, transform=test_transforms, download=download)
+
+    train_loader = torch.utils.data.DataLoader(svhn_train_set, batch_size=batch_size, shuffle=True, pin_memory=pin_memory, num_workers=num_workers)
+    valid_loader = torch.utils.data.DataLoader(svhn_valid_set, batch_size=batch_size, pin_memory=pin_memory, num_workers=num_workers)
+    test_loader = torch.utils.data.DataLoader(svhn_test_set, batch_size=batch_size, pin_memory=pin_memory, num_workers=num_workers)
+
+    dataloaders = {'train': train_loader,
+                   'valid': valid_loader,
+                   'test': test_loader,}
+
+    dataset_sizes = {'train': len(svhn_train_set),
+                     'valid': len(svhn_valid_set),
+                     'test': len(svhn_test_set)}
+    
+    return dataloaders, dataset_sizes
 
 def cifar_10_setter(teacher,
                     mode,

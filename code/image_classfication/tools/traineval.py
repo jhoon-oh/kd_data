@@ -54,7 +54,7 @@ def train_model(model_name, device, dataloaders, teacher, student, optimizer, nu
                     loss = mse_logit(pred_label, teacher_label)
                 elif args.logit == 'smooth_logit':
                     loss = smooth_logit(pred_label, teacher_label)
-                elif args.temperature > 100:
+                elif args.temperature > 150:
                     inf_gradient = inf_grad(pred_label, teacher_label, pred_label.shape[1], device)
                     pred_label.backward(args.alpha * inf_gradient, retain_graph=True)
                     loss = nn.CrossEntropyLoss()(pred_label, label) * (1 - args.alpha)

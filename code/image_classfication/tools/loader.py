@@ -8,7 +8,7 @@ def load_model(teacher_str, student_str, dataset, device):
     # nobn: the affine parameters in bn get False
     # demo: no shortcut
     
-    if dataset == 'cifar10':
+    if dataset == 'cifar10' or dataset == 'svhn':
         num_classes = 10
     elif dataset == 'cifar100':
         num_classes = 100
@@ -17,7 +17,7 @@ def load_model(teacher_str, student_str, dataset, device):
     elif dataset == 'imagenet':
         num_classes = 1000
     
-    if dataset == 'cifar10' or dataset == 'cifar100':
+    if dataset == 'cifar10' or dataset == 'cifar100' or dataset == 'svhn':
         if teacher_str is not None:
             bn_aff = False if 'nobn' in teacher_str else True
             shortcut = False if 'demo' in teacher_str else True
@@ -115,6 +115,20 @@ def load_dataloader(dataset,
     
     if dataset == 'cifar10':
         dataloaders, _ = cifar_10_setter(teacher=teacher,
+                                         mode=mode,
+                                         batch_size=batch_size,
+                                         root=root,
+                                         model_name=model_name,
+                                         per_class=per_class,
+                                         cls_acq=cls_acq,
+                                         cls_lower_qnt=cls_lower_qnt,
+                                         cls_upper_qnt=cls_upper_qnt,
+                                         sample_acq=sample_acq,
+                                         sample_lower_qnt=sample_lower_qnt,
+                                         sample_upper_qnt=sample_upper_qnt)
+        
+    elif dataset == 'svhn':
+        dataloaders, _ = svhn_setter(teacher=teacher,
                                          mode=mode,
                                          batch_size=batch_size,
                                          root=root,

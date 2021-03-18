@@ -54,6 +54,23 @@ def generate_sample_info(teacher, dataset, root, model_name, device):
         else:
             train_set = datasets.CIFAR100(root, train=True, transform=transform_list, download=True)
         train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=False)
+        
+    elif dataset == 'svhn':
+        mean = [0.5, 0.5, 0.5]
+        std = [0.5, 0.5, 0.5]
+        
+        transform_list = transforms.Compose([transforms.RandomCrop(32, padding=4),
+                                transforms.RandomHorizontalFlip(),
+                                transforms.ToTensor(),
+                                transforms.Normalize(mean=mean, std=std)])
+        
+        batch_size = 128
+
+        # Datasets
+        train_set = datasets.SVHN(root, train=True, transform=transform_list, download=True)
+        train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=False)
+        
+        
     
     elif dataset == 'tiny-imagenet':
         train_dir = os.path.join(root, 'train')
@@ -94,7 +111,7 @@ def generate_sample_info(teacher, dataset, root, model_name, device):
         p.requires_grad = False
     teacher.to(device).eval()
         
-    if dataset == 'cifar10' or dataset == 'cifar100':
+    if dataset == 'cifar10' or dataset == 'cifar100' or dataset == 'svhn':
         label_lst = []
         entropy_lst = []
         tld_lst = []
