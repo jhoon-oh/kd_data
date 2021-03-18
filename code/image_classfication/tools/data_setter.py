@@ -293,7 +293,7 @@ def svhn_setter(teacher,
     batch_size = batch_size
     
     # Datasets
-    train_set = datasets.SVHN(root, train=True, transform=train_transforms, download=download) # train transform applied
+    train_set = datasets.SVHN(root, split='train', transform=train_transforms, download=download) # train transform applied
     train_list, valid_list = set_train_valid(dataset='svhn',
                                              root=root,
                                              teacher=teacher,
@@ -309,7 +309,7 @@ def svhn_setter(teacher,
     svhn_train_set = Subset(train_set, train_list)
     svhn_valid_set = Subset(train_set, valid_list)
     
-    svhn_test_set = datasets.SVHN(root, train=False, transform=test_transforms, download=download)
+    svhn_test_set = datasets.SVHN(root, split='test', transform=test_transforms, download=download)
 
     train_loader = torch.utils.data.DataLoader(svhn_train_set, batch_size=batch_size, shuffle=True, pin_memory=pin_memory, num_workers=num_workers)
     valid_loader = torch.utils.data.DataLoader(svhn_valid_set, batch_size=batch_size, pin_memory=pin_memory, num_workers=num_workers)

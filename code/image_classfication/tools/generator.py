@@ -67,7 +67,7 @@ def generate_sample_info(teacher, dataset, root, model_name, device):
         batch_size = 128
 
         # Datasets
-        train_set = datasets.SVHN(root, train=True, transform=transform_list, download=True)
+        train_set = datasets.SVHN(root, split='train', transform=transform_list, download=True)
         train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=False)
         
         
