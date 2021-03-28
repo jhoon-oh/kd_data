@@ -21,10 +21,17 @@ def make_log(model_name, dataloaders, num_epochs):
 
 def train_model(model_name, device, dataloaders, teacher, student, optimizer, num_epochs, scheduler, criterion, args):
     if teacher is not None:
-        teacher.to(device)
-        teacher.eval()
-        for p in teacher.parameters():
-            p.requires_grad = False
+        if args.ensemble:
+            for key in teacher.keys():
+                teacher[key].to(device)
+                teacher[key].eval()
+                for p in teacher[key].parameters():
+                    p.requires_grad = False
+        else:
+            teacher.to(device)
+            teacher.eval()
+            for p in teacher.parameters():
+                p.requires_grad = False
             
     student.to(device)
     
@@ -45,7 +52,15 @@ def train_model(model_name, device, dataloaders, teacher, student, optimizer, nu
 
             pred_label = student(image)
             if teacher is not None:
-                teacher_label = teacher(image)
+                if args.ensemble:
+                    teacher_label = None
+                    for key in teacher.keys():
+                        if teacher_label == None:
+                            teacher_label = teacher[key](image)
+                        else:
+                            teacher_label += teacher[key](image)
+                else:
+                    teacher_label = teacher(image)
 
             optimizer.zero_grad()
             
@@ -70,14 +85,14 @@ def train_model(model_name, device, dataloaders, teacher, student, optimizer, nu
             scheduler.step()
         
         if args.dataset != 'imagenet':
-            loss_log, acc_log = eval_model(teacher, student, dataloaders['train'], criterion, args.alpha, args.temperature, device)
+            loss_log, acc_log = eval_model(teacher, student, dataloaders['train'], criterion, args.alpha, args.temperature, device, args.ensemble)
             epoch_log += [loss_log, acc_log]
 
             if len(dataloaders['valid']) != 0:
-                loss_log, acc_log = eval_model(teacher, student, dataloaders['valid'], criterion, args.alpha, args.temperature, device)
+                loss_log, acc_log = eval_model(teacher, student, dataloaders['valid'], criterion, args.alpha, args.temperature, device, args.ensemble)
                 epoch_log += [loss_log, acc_log]
 
-            loss_log, acc_log = eval_model(teacher, student, dataloaders['test'], criterion, args.alpha, args.temperature, device)
+            loss_log, acc_log = eval_model(teacher, student, dataloaders['test'], criterion, args.alpha, args.temperature, device, args.ensemble)
             epoch_log += [loss_log, acc_log]
             log_pd.loc[epoch] = epoch_log
             log_pd.to_csv(log_filename)
@@ -99,9 +114,13 @@ def train_model(model_name, device, dataloaders, teacher, student, optimizer, nu
     torch.save(state, './model_checkpoints/'+model_name+'.t1')
     print ('./model_checkpoints/'+model_name+'.t1')
     
-def eval_model(teacher, student, loader, criterion, alpha, temperature, device):
+def eval_model(teacher, student, loader, criterion, alpha, temperature, device, ensemble):
     if teacher is not None:
-        teacher.eval()
+        if ensemble:
+            for key in teacher.keys():
+                teacher[key].eval()
+        else:
+            teacher.eval()
     student.eval()
     losses = []
     for i, data in enumerate(loader):
@@ -111,7 +130,15 @@ def eval_model(teacher, student, loader, criterion, alpha, temperature, device):
         pred_label = student(image)
 
         if teacher is not None:
-            teacher_label = teacher(image)
+            if ensemble:
+                teacher_label = None
+                for key in teacher.keys():
+                    if teacher_label == None:
+                        teacher_label = teacher[key](image)
+                    else:
+                        teacher_label += teacher[key](image)
+            else:
+                teacher_label = teacher(image)
             loss = criterion(pred_label, label, teacher_label, alpha, temperature)
         else:
             loss = criterion(pred_label, label)

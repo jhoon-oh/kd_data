@@ -59,16 +59,16 @@ def main(args):
     teacher, student = load_model(teacher_str=args.teacher,
                                   student_str=args.student,
                                   dataset=args.dataset,
-                                  device=device)
+                                  device=device, ensemble=args.ensemble)
     
-    generate_sample_info(teacher=teacher,
+    generate_sample_info(teacher=teacher[args.teacher.split(',')[0]] if args.ensemble else teacher,
                          dataset=args.dataset,
                          root=args.root,
                          model_name=model_name,
                          device=device)
     
     dataloaders = load_dataloader(dataset=args.dataset,
-                                  teacher=teacher,
+                                  teacher=teacher[args.teacher.split(',')[0]] if args.ensemble else teacher,
                                   mode=args.mode,
                                   batch_size=args.batch_size,
                                   root=args.root,
@@ -116,6 +116,7 @@ if __name__ == '__main__':
     parser.add_argument('--teacher', default=None, type=str, help='teacher model (string)')
     parser.add_argument('--student', default=None, type=str, help='student model (string)')
     parser.add_argument('--dataset', default='cifar100', type=str, help='which dataset to use')
+    parser.add_argument('--ensemble', help='whether to use ensemble', action='store_true')
     
     parser.add_argument('--mode', default='crop', type=str, help='augmentation strategy (vanilla, flip, crop, fastauto, auto)')
     parser.add_argument('--batch_size', default=128, type=int, help='batch size')

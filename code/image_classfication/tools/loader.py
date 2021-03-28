@@ -3,7 +3,7 @@ from models import cifar, imagenet
 
 from .data_setter import *
 
-def load_model(teacher_str, student_str, dataset, device):
+def load_model(teacher_str, student_str, dataset, device, ensemble):
     # teacher_str, student_str: string ex) wrn-28-4, res-28-4
     # nobn: the affine parameters in bn get False
     # demo: no shortcut
@@ -21,20 +21,34 @@ def load_model(teacher_str, student_str, dataset, device):
         if teacher_str is not None:
             bn_aff = False if 'nobn' in teacher_str else True
             shortcut = False if 'demo' in teacher_str else True
+            
+            if ensemble:
+                teacher_cand = teacher_str.split(',')
+                teacher = {}
+                for teacher_str_cand in teacher_cand:
+                    if 'wrn' in teacher_str_cand:
+                        teacher_depth = int(teacher_str_cand.split('-')[1])
+                        teacher_widen_factor = int(teacher_str_cand.split('-')[2])
+                        teacher_tmp = cifar.WideResNet(depth=teacher_depth, widen_factor=teacher_widen_factor, num_classes=num_classes, bn_aff = bn_aff, shortcut = shortcut)
+                    filename = './model_checkpoints/{}/None/{}/alp_0.1_T_1.0/random_0.0-1.0_random_0.0-1.0_seed9999_none_noclas.t1'.format(dataset, teacher_str_cand)
+                    teacher_tmp.cpu()
+                    teacher_tmp.load_state_dict(torch.load(filename, map_location='cpu')['199'])
+                    teacher_tmp = teacher_tmp.to(device)
+                    teacher[teacher_str_cand] = teacher_tmp
+            else:
+                if 'wrn' in teacher_str:
+                    teacher_depth = int(teacher_str.split('-')[1])
+                    teacher_widen_factor = int(teacher_str.split('-')[2])
+                    teacher = cifar.WideResNet(depth=teacher_depth, widen_factor=teacher_widen_factor, num_classes=num_classes, bn_aff = bn_aff, shortcut = shortcut)
+                elif 'res' in teacher_str:
+                    teacher_depth = int(teacher_str.split('-')[1])
+                    teacher_widen_factor = int(teacher_str.split('-')[2])
+                    teacher = cifar.ResNet(depth=teacher_depth, width=teacher_widen_factor, num_classes=num_classes, bn_aff = bn_aff, shortcut = shortcut)         
 
-            if 'wrn' in teacher_str:
-                teacher_depth = int(teacher_str.split('-')[1])
-                teacher_widen_factor = int(teacher_str.split('-')[2])
-                teacher = cifar.WideResNet(depth=teacher_depth, widen_factor=teacher_widen_factor, num_classes=num_classes, bn_aff = bn_aff, shortcut = shortcut)
-            elif 'res' in teacher_str:
-                teacher_depth = int(teacher_str.split('-')[1])
-                teacher_widen_factor = int(teacher_str.split('-')[2])
-                teacher = cifar.ResNet(depth=teacher_depth, width=teacher_widen_factor, num_classes=num_classes, bn_aff = bn_aff, shortcut = shortcut)         
-                
-            filename = './model_checkpoints/{}/None/{}/alp_0.1_T_1.0/random_0.0-1.0_random_0.0-1.0_seed9999_none_noclas.t1'.format(dataset, teacher_str)
-            teacher.cpu()
-            teacher.load_state_dict(torch.load(filename, map_location='cpu')['199'])
-            teacher = teacher.to(device)
+                filename = './model_checkpoints/{}/None/{}/alp_0.1_T_1.0/random_0.0-1.0_random_0.0-1.0_seed9999_none_noclas.t1'.format(dataset, teacher_str)
+                teacher.cpu()
+                teacher.load_state_dict(torch.load(filename, map_location='cpu')['199'])
+                teacher = teacher.to(device)
         else:
             teacher = None
         

@@ -34,8 +34,8 @@ def generate_sample_info(teacher, dataset, root, model_name, device):
     sample_info_path = './results/' + "/".join(model_name.split("/")[:2])
     sample_info_path = os.path.join(sample_info_path, 'sample_info.json')
     
-    # if os.path.isfile(sample_info_path):
-    #     return
+    if os.path.isfile(sample_info_path):
+        return
         
     if dataset == 'cifar10' or dataset == 'cifar100':
         mean = [0.4914, 0.4822, 0.4465]
@@ -140,15 +140,16 @@ def generate_sample_info(teacher, dataset, root, model_name, device):
             entropy_lst = []
             tld_lst = []
             
-            image = image.type(torch.FloatTensor).to(device)
+#             image = image.type(torch.FloatTensor).to(device)
             label = label.type(torch.LongTensor).to(device)
             
             label_lst += label.tolist()
-            logit = teacher(image)
-            prob = F.softmax(logit, dim=1)
-            entropy_lst += calc_entropy(prob).tolist()
-            tld_lst += calc_tld(label, logit).tolist()
-            
+#             logit = teacher(image)
+#             prob = F.softmax(logit, dim=1)
+#             entropy_lst += calc_entropy(prob).tolist()
+#             tld_lst += calc_tld(label, logit).tolist()
+            entropy_lst += torch.zeros_like(label).tolist()
+            tld_lst += torch.zeros_like(label).tolist()
             sample_info = {}
             for i, (label, entropy, tld) in enumerate(zip(label_lst, entropy_lst, tld_lst)):
                 sample_info[i] = (label, entropy, tld)
@@ -156,6 +157,9 @@ def generate_sample_info(teacher, dataset, root, model_name, device):
             
             with open(sample_info_epoch_path, "w") as json_file:
                 json.dump(sample_info, json_file)
+        label_lst = []
+        entropy_lst = []
+        tld_lst = []
             
         sample_info_path = './results/' + "/".join(model_name.split("/")[:2])
         sample_info_paths = os.listdir(sample_info_path)

@@ -534,8 +534,8 @@ def imagenet_setter(teacher,
                     sample_lower_qnt,
                     sample_upper_qnt,
                     root='/home/taehyeon/ImageNet/Data/',
-                    pin_memory=False,
-                    num_workers=4,
+                    pin_memory=True,
+                    num_workers=8,
                     download=True,
                     fixed_valid=True):
     if fixed_valid:
