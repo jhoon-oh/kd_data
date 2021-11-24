@@ -1,6 +1,6 @@
 # Paper Title
 
-This repository is the official implementation of "When does Knowledge Distillation Help?" for the image classification tasks.
+This repository is the official implementation of "Comparing Kullback-Leibler Divergence and Mean Squared Error Loss in Knowledge Distillation" for the image classification tasks. [[IJCAI2021 Poster](https://www.ijcai.org/proceedings/2021/0362.pdf)]
 
 
 ## Training
