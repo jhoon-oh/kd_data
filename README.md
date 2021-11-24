@@ -10,7 +10,7 @@ You can reproduce all results in the paper with our code. All results have been 
 ## Contact
 Feel free to contact us if you have any questions:)
 
-- Jaehoon Oh: jaehoon.oh@kaist.ac.kr
+- Jaehoon Oh: jhoon.oh@kaist.ac.kr
 - Taehyon Kim: potter32@kaist.ac.kr
 
 
