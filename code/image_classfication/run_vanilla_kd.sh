@@ -5,7 +5,7 @@ do
     python main.py --device=cuda:0 \
                    --teacher=wrn-28-4 \
                    --student=wrn-28-4 \
-                   --dataset=cifar100 \
+                   --dataset=cifar10 \
                    --batch_size=128 \
                    --num_epochs=200 \
                    --mode=crop \
